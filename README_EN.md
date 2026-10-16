@@ -80,7 +80,7 @@ Your weekly quota capacity is numerically equivalent to exactly **four 5-hour bu
 Run the following command in your terminal:
 
 ```bash
-git clone https://github.com/pengyufeng/quota-lens.git ~/.gemini/config/plugins/quota-lens
+git clone https://github.com/PYFGDUF/quota-lens.git ~/.gemini/config/plugins/quota-lens
 ```
 
 ### Option 2: Symbolic Link (For Local Development)

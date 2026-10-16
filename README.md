@@ -80,7 +80,7 @@ $$\frac{\Delta 5\text{h}}{\Delta \text{Weekly}} \equiv 4.0000$$
 打开终端，将本仓库克隆至 Antigravity 全局插件目录：
 
 ```bash
-git clone https://github.com/pengyufeng/quota-lens.git ~/.gemini/config/plugins/quota-lens
+git clone https://github.com/PYFGDUF/quota-lens.git ~/.gemini/config/plugins/quota-lens
 ```
 
 ### 方式 2：使用软链接（本地开发调试）
