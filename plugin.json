@@ -1,5 +1,10 @@
 {
   "name": "quota-lens",
-  "description": "Antigravity 原生配额透视扩展：实时查看单次会话消耗的 5 小时与每周配额，监控模型组全局配额健康度与刷新倒计时。",
-  "logo": "assets/logo.svg"
+  "description": "Antigravity 原生配额透视扩展：实时查看单次会话消耗的 5 小时与每周配额，监控模型组全局配额健康度与刷新倒计时；内置 quota-planner 技能支持任务规划用量预测与动态缩放。",
+  "logo": "assets/logo.svg",
+  "suggestedPrompts": [
+    "在任务规划时预估本次任务大约会消耗多少配额",
+    "查看当前 5 小时与每周配额健康度并评估后续任务规模",
+    "当前配额紧绷，如何精简或分期调整本次执行计划"
+  ]
 }

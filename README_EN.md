@@ -42,6 +42,11 @@ When pair programming with AI in Antigravity, developers often experience quota 
   - Live observation of official Language Server buckets (`gemini-5h`, `gemini-weekly`, `3p-5h`, `3p-weekly`).
   - Computes exact remaining duration until full renewal with a second-by-second countdown ticker.
 
+- **Task Planning Quota Prediction & Dynamic Scaling (quota-planner Skill)**
+  - Ships with native Antigravity skill `quota-planner`, deeply integrating into the `/plan` workflow.
+  - Automatically invokes `check_quota.mjs` to probe live balances, estimating task consumption based on the 4.0000 Invariance Law.
+  - Pre-emptively warns users when quota is constrained, offering three dynamic scale adjustment strategies (Full, Phased MVP, or Lean Mode).
+
 - **Restrained IDE-Native Aesthetics & Bilingual i18n**
   - Designed with low-saturation palette and pure SVG vector icons, **zero emoji clutter**.
   - Seamless toggle between `en-US` and `zh-CN` across all UI labels, cards, countdowns, and dialogs.
@@ -119,6 +124,13 @@ quota-lens/
 │   └── readme/
 │       ├── hero.svg                  # High-resolution README hero banner
 │       └── architecture.svg          # System architecture vector diagram
+├── skills/
+│   └── quota-planner/                # Task planning quota estimation & dynamic scaling skill
+│       ├── SKILL.md                  # Skill workflow guide & budget presentation rules
+│       ├── scripts/
+│       │   └── check_quota.mjs       # ConnectRPC native quota inspection CLI (Zero-Dep)
+│       └── references/
+│           └── quota_matrix.md       # Quota estimation empirical reference matrix
 └── sidecars/
     └── panel/
         ├── package.json              # Sidecar metadata (Zero Dependencies)

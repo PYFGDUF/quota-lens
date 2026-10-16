@@ -42,6 +42,11 @@
   - 直接感知官方 Language Server 分桶状态（`gemini-5h`, `gemini-weekly`, `3p-5h`, `3p-weekly`）。
   - 秒级动态计算距离配额完全刷新的剩余时长，支持跨窗口重置自动识别。
 
+- **任务规划阶段配额预测与动态调优（quota-planner 技能）**
+  - 内置 Antigravity 原生 Skill `quota-planner`，与 `/plan` 任务规划流程深度集成。
+  - 任务启动前自动调用 `check_quota.mjs` 探测实时配额余量，基于 4.0000 定律进行科学用量建模与风险分级。
+  - 配额紧绷时主动向用户提供全量、分期里程碑（MVP）或精简降级等三档动态伸缩策略。
+
 - **极简 IDE 原生质感与中英双语 (i18n)**
   - 严格遵守低饱和度设计规范，全界面采用纯 SVG 矢量图标，**零 Emoji 杂质**。
   - 内置中英双语（`zh-CN` / `en-US`），支持浏览器语言自适应与右上角一键无缝切换。
@@ -120,6 +125,13 @@ quota-lens/
 │   └── readme/
 │       ├── hero.svg                  # 视网膜高清矢量头图 (带实时问答交互卡片)
 │       └── architecture.svg          # 系统精准归因架构工作流图
+├── skills/
+│   └── quota-planner/                # 任务规划配额预测与动态调优技能
+│       ├── SKILL.md                  # 技能流程指南与卡片输出规范
+│       ├── scripts/
+│       │   └── check_quota.mjs       # ConnectRPC 原生配额探测 CLI (零依赖)
+│       └── references/
+│           └── quota_matrix.md       # 配额测算经验矩阵与换算常数
 └── sidecars/
     └── panel/
         ├── package.json              # Sidecar 元数据 (零外部 npm 依赖)
