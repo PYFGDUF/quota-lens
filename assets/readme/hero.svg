@@ -1,0 +1,234 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360" fill="none" role="img" aria-labelledby="heroTitle heroDesc">
+  <title id="heroTitle">Quota Lens - Antigravity UI Extension</title>
+  <desc id="heroDesc">Real-time per-turn quota tracking and limit breakdown for Google Antigravity</desc>
+
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="heroBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#080c14" />
+      <stop offset="60%" stop-color="#0a101b" />
+      <stop offset="100%" stop-color="#05070c" />
+    </linearGradient>
+
+    <!-- Subtle Top Ambient Glow -->
+    <radialGradient id="ambientGlow" cx="25%" cy="0%" r="60%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.08" />
+      <stop offset="100%" stop-color="#38bdf8" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Precision Engineering Grid Pattern -->
+    <pattern id="precisionGrid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M 32 0 L 0 0 0 32" fill="none" stroke="rgba(255, 255, 255, 0.02)" stroke-width="1" />
+    </pattern>
+
+    <!-- Card Background -->
+    <linearGradient id="cardBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f1624" />
+      <stop offset="100%" stop-color="#090d15" />
+    </linearGradient>
+
+    <!-- Brand Lens Gradient -->
+    <linearGradient id="lensGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#2563eb" />
+    </linearGradient>
+
+    <!-- 5h Quota Box Fill -->
+    <linearGradient id="pill5hGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="rgba(16, 185, 129, 0.12)" />
+      <stop offset="100%" stop-color="rgba(6, 182, 212, 0.05)" />
+    </linearGradient>
+
+    <!-- Weekly Quota Box Fill -->
+    <linearGradient id="pillWkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="rgba(99, 102, 241, 0.12)" />
+      <stop offset="100%" stop-color="rgba(139, 92, 246, 0.05)" />
+    </linearGradient>
+
+    <!-- Multi-Layer Realistic Elevation Shadow -->
+    <filter id="cardShadow" x="-30" y="-20" width="572" height="356" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="16" stdDeviation="24" flood-color="#000000" flood-opacity="0.65" />
+      <feDropShadow dx="0" dy="2" stdDeviation="6" flood-color="#000000" flood-opacity="0.4" />
+    </filter>
+  </defs>
+
+  <!-- Container Box with Precision Border -->
+  <rect width="1200" height="360" rx="16" fill="url(#heroBg)" stroke="#1e293b" stroke-width="1.2" />
+  <rect width="1200" height="360" rx="16" fill="url(#precisionGrid)" />
+  <rect width="1200" height="360" rx="16" fill="url(#ambientGlow)" />
+
+  <!-- ================= LEFT COLUMN: PRODUCT AUTHORITY ================= -->
+  <g transform="translate(64, 44)">
+    <!-- Title & Brand Row (No Eyebrow - Impeccable Standard) -->
+    <g>
+      <!-- Option C Viewfinder Icon (44x44 Squircle) -->
+      <g>
+        <rect width="44" height="44" rx="12" fill="#141822" stroke="rgba(255, 255, 255, 0.12)" stroke-width="1.2" />
+        <circle cx="22" cy="22" r="11.5" stroke="rgba(255, 255, 255, 0.2)" stroke-width="2" fill="none" />
+        <path d="M 22 10.5 A 11.5 11.5 0 0 1 33.5 22" stroke="url(#lensGrad)" stroke-width="3" stroke-linecap="round" />
+        <circle cx="22" cy="22" r="5" stroke="rgba(255, 255, 255, 0.4)" stroke-width="1.2" fill="none" />
+        <circle cx="22" cy="22" r="1.8" fill="#38bdf8" />
+      </g>
+
+      <!-- Main Name & Native Moniker -->
+      <text x="58" y="32" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', sans-serif" font-size="32" font-weight="700" letter-spacing="-0.025em">Quota Lens</text>
+      <text x="256" y="32" fill="#94a3b8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', sans-serif" font-size="20" font-weight="400">配额透视</text>
+
+      <!-- Clean Version Pill -->
+      <g transform="translate(362, 12)">
+        <rect width="48" height="22" rx="5" fill="rgba(56, 189, 248, 0.1)" stroke="rgba(56, 189, 248, 0.3)" stroke-width="0.8" />
+        <text x="10" y="15" fill="#38bdf8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="11.5" font-weight="600">v1.2</text>
+      </g>
+    </g>
+
+    <!-- Core Value Statement -->
+    <text x="0" y="98" fill="#f8fafc" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', sans-serif" font-size="17" font-weight="600" letter-spacing="-0.015em">
+      实时查看每一轮对话单独消耗的 5 小时与每周配额
+    </text>
+
+    <!-- Explanatory Context -->
+    <text x="0" y="132" fill="#94a3b8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', sans-serif" font-size="13.5" font-weight="400">
+      单次提问至 Agent 回复完成计为“一次对话 / Turn”。
+    </text>
+    <text x="0" y="156" fill="#94a3b8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', sans-serif" font-size="13.5" font-weight="400">
+      毫秒级遥测与 Token 成本归因，告别限额黑盒与意外中断。
+    </text>
+
+    <!-- Feature Attribute Micro-Pills -->
+    <g transform="translate(0, 212)">
+      <!-- Pill 1: 5h & Weekly -->
+      <g>
+        <rect width="128" height="30" rx="6" fill="rgba(255, 255, 255, 0.03)" stroke="rgba(255, 255, 255, 0.09)" stroke-width="0.9" />
+        <circle cx="16" cy="15" r="4.5" stroke="#38bdf8" stroke-width="1.2" fill="none" />
+        <path d="M 16 12.5 L 16 15 L 17.5 16.5" stroke="#38bdf8" stroke-width="1.2" stroke-linecap="round" />
+        <text x="28" y="19" fill="#e2e8f0" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11.5" font-weight="500">5h &amp; Weekly</text>
+      </g>
+
+      <!-- Pill 2: Turn Attribution -->
+      <g transform="translate(136, 0)">
+        <rect width="122" height="30" rx="6" fill="rgba(255, 255, 255, 0.03)" stroke="rgba(255, 255, 255, 0.09)" stroke-width="0.9" />
+        <path d="M 12 12 H 20 V 17 H 14 L 12 19 V 12 Z" stroke="#34d399" stroke-width="1.2" fill="none" stroke-linejoin="round" />
+        <text x="27" y="19" fill="#e2e8f0" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11.5" font-weight="500">单轮消耗归因</text>
+      </g>
+
+      <!-- Pill 3: Zero Dependency -->
+      <g transform="translate(266, 0)">
+        <rect width="112" height="30" rx="6" fill="rgba(255, 255, 255, 0.03)" stroke="rgba(255, 255, 255, 0.09)" stroke-width="0.9" />
+        <rect x="11" y="10" width="8" height="10" rx="1.5" stroke="#a78bfa" stroke-width="1.2" fill="none" />
+        <path d="M 13 8 V 10 M 17 8 V 10" stroke="#a78bfa" stroke-width="1.2" stroke-linecap="round" />
+        <text x="26" y="19" fill="#e2e8f0" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11.5" font-weight="500">零外部依赖</text>
+      </g>
+
+      <!-- Pill 4: ConnectRPC -->
+      <g transform="translate(386, 0)">
+        <rect width="120" height="30" rx="6" fill="rgba(255, 255, 255, 0.03)" stroke="rgba(255, 255, 255, 0.09)" stroke-width="0.9" />
+        <path d="M 16 9 L 12 15 H 17 L 14 21 L 20 13 H 15 Z" fill="#fbbf24" />
+        <text x="27" y="19" fill="#e2e8f0" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11.5" font-weight="500">ConnectRPC</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- ================= RIGHT COLUMN: LIVE IDE PROOF CARD ================= -->
+  <g transform="translate(624, 32)" filter="url(#cardShadow)">
+    <!-- Main Pane Frame -->
+    <rect width="512" height="296" rx="14" fill="url(#cardBg)" stroke="rgba(255, 255, 255, 0.12)" stroke-width="1.2" />
+    <line x1="14" y1="1" x2="498" y2="1" stroke="rgba(255, 255, 255, 0.18)" stroke-width="1" />
+
+    <!-- Pane Header -->
+    <g transform="translate(18, 16)">
+      <!-- Tiny Viewfinder Logo -->
+      <circle cx="8" cy="8" r="5" stroke="rgba(255, 255, 255, 0.3)" stroke-width="1.2" fill="none" />
+      <path d="M 8 3 A 5 5 0 0 1 13 8" stroke="#38bdf8" stroke-width="1.5" stroke-linecap="round" />
+      <circle cx="8" cy="8" r="1.2" fill="#38bdf8" />
+
+      <!-- Breadcrumbs & Pane ID -->
+      <text x="22" y="12" fill="#cbd5e1" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11" font-weight="700" letter-spacing="0.05em">QUOTA LENS</text>
+      <text x="108" y="12" fill="#475569" font-family="ui-monospace, monospace" font-size="11">|</text>
+      <text x="118" y="12" fill="#64748b" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11">实时遥测面板</text>
+
+      <!-- Live Heartbeat Indicator -->
+      <circle cx="438" cy="8" r="5" fill="#10b981" opacity="0.2" />
+      <circle cx="438" cy="8" r="2.8" fill="#10b981" />
+      <text x="448" y="12" fill="#10b981" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10.5" font-weight="600">LIVE</text>
+    </g>
+
+    <!-- Turn Context & User Query Module -->
+    <g transform="translate(18, 44)">
+      <rect width="476" height="52" rx="8" fill="#070a10" stroke="#1e293b" stroke-width="0.9" />
+      
+      <!-- Turn Meta Info -->
+      <g transform="translate(12, 10)">
+        <rect width="64" height="18" rx="4" fill="rgba(56, 189, 248, 0.14)" stroke="rgba(56, 189, 248, 0.3)" stroke-width="0.7" />
+        <text x="8" y="13" fill="#38bdf8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10" font-weight="600">Turn #04</text>
+        <text x="76" y="13" fill="#94a3b8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10.5">19:20:15 (耗时 3.2s)</text>
+        <text x="366" y="13" fill="#64748b" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10">Gemini 2.5 Pro</text>
+      </g>
+
+      <!-- Prompt Query Text -->
+      <text x="12" y="40" fill="#e2e8f0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="12">
+        “帮我完成上传GitHub前的检查并用 /impeccable 优化README”
+      </text>
+    </g>
+
+    <!-- Quota Delta Consumption Cards (Two Columns) -->
+    <g transform="translate(18, 106)">
+      <!-- 5-Hour Limit Card -->
+      <g>
+        <rect width="232" height="84" rx="8" fill="url(#pill5hGrad)" stroke="rgba(16, 185, 129, 0.28)" stroke-width="1" />
+        <g transform="translate(12, 14)">
+          <text x="0" y="8" fill="#94a3b8" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11.5" font-weight="500">5 小时配额消耗</text>
+          <text x="0" y="38" fill="#34d399" font-family="ui-monospace, SFMono-Regular, monospace" font-size="24" font-weight="700">-0.20%</text>
+          <text x="118" y="35" fill="#cbd5e1" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11">剩余: 98.8%</text>
+          
+          <!-- Progress Track -->
+          <rect x="0" y="52" width="208" height="3" rx="1.5" fill="rgba(255, 255, 255, 0.08)" />
+          <rect x="0" y="52" width="186" height="3" rx="1.5" fill="#10b981" />
+        </g>
+      </g>
+
+      <!-- Weekly Limit Card -->
+      <g transform="translate(244, 0)">
+        <rect width="232" height="84" rx="8" fill="url(#pillWkGrad)" stroke="rgba(99, 102, 241, 0.28)" stroke-width="1" />
+        <g transform="translate(12, 14)">
+          <text x="0" y="8" fill="#94a3b8" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11.5" font-weight="500">每周配额消耗</text>
+          <text x="0" y="38" fill="#818cf8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="24" font-weight="700">-0.05%</text>
+          <text x="118" y="35" fill="#cbd5e1" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11">剩余: 99.4%</text>
+          
+          <!-- Progress Track -->
+          <rect x="0" y="52" width="208" height="3" rx="1.5" fill="rgba(255, 255, 255, 0.08)" />
+          <rect x="0" y="52" width="198" height="3" rx="1.5" fill="#6366f1" />
+        </g>
+      </g>
+    </g>
+
+    <!-- Token Breakdown & Telemetry Tray -->
+    <g transform="translate(18, 200)">
+      <rect width="476" height="78" rx="8" fill="#070a10" stroke="#1e293b" stroke-width="0.9" />
+      
+      <!-- Top Row: Token Metrics -->
+      <g transform="translate(12, 24)">
+        <text x="0" y="0" fill="#94a3b8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11">Tokens: <tspan fill="#f8fafc" font-weight="700">2,418</tspan> (输入: 1,850 · 生成: 568)</text>
+        
+        <!-- Cache Pill -->
+        <g transform="translate(356, -13)">
+          <rect width="96" height="18" rx="4" fill="rgba(56, 189, 248, 0.12)" stroke="rgba(56, 189, 248, 0.28)" stroke-width="0.7" />
+          <text x="8" y="13" fill="#38bdf8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10.5" font-weight="600">缓存命中 94.2%</text>
+        </g>
+      </g>
+
+      <!-- Divider -->
+      <line x1="12" y1="36" x2="464" y2="36" stroke="rgba(255, 255, 255, 0.05)" stroke-width="1" />
+
+      <!-- Bottom Row: Telemetry Source -->
+      <g transform="translate(12, 57)">
+        <text x="0" y="0" fill="#64748b" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10.5">RPC: RetrieveUserQuotaSummary (48ms)</text>
+        
+        <!-- Tool Calls Tag -->
+        <g transform="translate(362, -13)">
+          <rect width="90" height="18" rx="4" fill="#141c2c" stroke="#1f2d47" stroke-width="0.8" />
+          <text x="8" y="13" fill="#94a3b8" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="10.5">2 类工具调用</text>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

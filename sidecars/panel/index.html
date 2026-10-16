@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quota Lens - 配额透视</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/preload.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="header-brand">
+        <svg class="brand-icon" viewBox="0 0 64 64" width="22" height="22" fill="none">
+          <defs>
+            <linearGradient id="hdrArcGradC" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#38bdf8" />
+              <stop offset="100%" stop-color="#2563eb" />
+            </linearGradient>
+          </defs>
+          <rect width="64" height="64" rx="16" fill="#18181b" />
+          <rect x="0.75" y="0.75" width="62.5" height="62.5" rx="15.25" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1.5" />
+          <circle cx="32" cy="32" r="17" stroke="rgba(255, 255, 255, 0.18)" stroke-width="3" fill="none" />
+          <path d="M 32 15 A 17 17 0 0 1 49 32" stroke="url(#hdrArcGradC)" stroke-width="4.5" stroke-linecap="round" />
+          <circle cx="32" cy="32" r="7.5" stroke="rgba(255, 255, 255, 0.4)" stroke-width="1.8" fill="none" />
+          <circle cx="32" cy="32" r="2.5" fill="#38bdf8" />
+        </svg>
+        <div class="brand-info">
+          <h1 class="brand-title">
+            <span data-i18n="app.title">配额透视</span>
+            <span class="badge-tag">Quota Lens</span>
+          </h1>
+          <p class="brand-subtitle" data-i18n="app.subtitle">单次对话限额细分监控</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <!-- Language Switcher Toggle -->
+        <button id="btn-lang-toggle" class="btn btn-secondary btn-icon" title="切换语言 / Switch Language">
+          <span id="lang-label" class="lang-text">EN</span>
+        </button>
+        <button id="btn-refresh" class="btn btn-secondary btn-icon" title="刷新最新配额数据">
+          <svg class="btn-svg" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+          </svg>
+          <span data-i18n="btn.refresh">刷新</span>
+        </button>
+        <button id="btn-reset-baseline" class="btn btn-secondary btn-icon" title="重设会话配额起始统计基准">
+          <svg class="btn-svg" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          <span data-i18n="btn.resetBaseline">重设基准</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Active Conversation Info -->
+    <div class="convo-bar card">
+      <div class="convo-info-row">
+        <div class="convo-title-wrap">
+          <span class="convo-dot"></span>
+          <span id="convo-title" class="convo-title-text" data-i18n="convo.detecting">正在同步当前会话...</span>
+        </div>
+        <span id="live-indicator" class="meta-item live-pulse">
+          <span class="pulse-dot"></span> <span data-i18n="convo.live">实时追踪</span>
+        </span>
+      </div>
+      <div class="convo-meta-row">
+        <span id="convo-baseline-time" class="meta-item">基准起点: --</span>
+        <span id="convo-short-id" class="meta-item convo-id-text">ID: --</span>
+      </div>
+    </div>
+
+    <!-- Model Group Switcher Tabs -->
+    <div class="tabs-container">
+      <button class="tab-btn active" data-group="gemini">
+        <svg class="tab-svg" viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+          <path d="M12 2L14.4 9.6L22 12L14.4 14.4L12 22L9.6 14.4L2 12L9.6 9.6Z"/>
+        </svg>
+        <span data-i18n="tab.gemini">Gemini 模型组</span>
+      </button>
+      <button class="tab-btn" data-group="3p">
+        <svg class="tab-svg" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+          <polyline points="2 17 12 22 22 17"/>
+          <polyline points="2 12 12 17 22 12"/>
+        </svg>
+        <span data-i18n="tab.3p">Claude & GPT 组</span>
+      </button>
+    </div>
+
+    <!-- Highlight: Latest Turn Quota Card -->
+    <section class="section">
+      <div class="section-header">
+        <h2 class="section-title" data-i18n="latest.title">刚刚这一轮对话消耗</h2>
+        <span class="section-desc" data-i18n="latest.desc">最近一次提问与智能体回复所产生的单独限额消耗</span>
+      </div>
+
+      <div class="card latest-turn-card" id="latest-turn-box">
+        <div class="latest-turn-header">
+          <span class="turn-chip" id="latest-turn-chip">第 -- 轮问答</span>
+          <span class="latest-turn-time" id="latest-turn-time">--</span>
+        </div>
+        
+        <!-- User prompt quote -->
+        <div class="user-prompt-quote" id="latest-prompt-quote">
+          “等待对话中...”
+        </div>
+
+        <!-- Latest Turn Delta Badges -->
+        <div class="turn-delta-row">
+          <div class="turn-delta-item delta-5h-theme">
+            <span class="turn-delta-label" data-i18n="quota.5hLabel">5 小时配额消耗</span>
+            <span class="turn-delta-val" id="latest-turn-5h">-0.00%</span>
+          </div>
+          <div class="turn-delta-item delta-weekly-theme">
+            <span class="turn-delta-label" data-i18n="quota.weeklyLabel">每周配额消耗</span>
+            <span class="turn-delta-val" id="latest-turn-weekly">-0.00%</span>
+          </div>
+        </div>
+
+        <!-- Latest Turn Metrics -->
+        <div class="turn-meta-chips">
+          <span class="chip-item" id="latest-turn-tokens">Token: 0</span>
+          <span class="chip-item" id="latest-turn-duration">耗时: 0秒</span>
+          <span class="chip-item" id="latest-turn-steps">步骤: 0步</span>
+          <span class="chip-item" id="latest-turn-cache">缓存: 0%</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Detailed List: All Turns Breakdown -->
+    <section class="section">
+      <div class="section-header-flex">
+        <div>
+          <h2 class="section-title" data-i18n="turns.title">交互轮次清单明细</h2>
+          <span class="section-desc" data-i18n="turns.desc">每一轮“提问 -> 回复”的单独配额与 Token 消耗列表</span>
+        </div>
+        <div class="sort-toggle-wrap">
+          <button id="btn-sort-turns" class="btn-text">
+            <svg class="sort-svg" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 6h18M6 12h12m-9 6h6"/>
+            </svg>
+            <span id="sort-label" data-i18n="turns.sortNewest">最新在最前</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Turns Container -->
+      <div id="turns-list" class="turns-list-container">
+        <div class="empty-state card">
+          <span data-i18n="turns.empty">暂无轮次交互记录</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Session Total Summary (Collapsible) -->
+    <details class="section-details card" open>
+      <summary class="section-summary">
+        <span class="summary-title">
+          <svg class="section-svg" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+          <span data-i18n="session.title">本次会话累计总消耗</span>
+        </span>
+        <span class="summary-badge" id="session-total-badge">总计 -0.00%</span>
+      </summary>
+      
+      <div class="details-content">
+        <div class="delta-grid">
+          <div class="delta-mini-card">
+            <span class="mini-label" data-i18n="session.5hLabel">5 小时总计消耗</span>
+            <span class="mini-val" id="val-delta-5h">-0.00%</span>
+            <div class="progress-bar-container">
+              <div class="progress-bar-fill delta-fill-5h" id="bar-delta-5h" style="width: 0%"></div>
+            </div>
+            <span class="mini-footer" id="delta-detail-5h">起点: --% -> 当前: --%</span>
+          </div>
+
+          <div class="delta-mini-card">
+            <span class="mini-label" data-i18n="session.weeklyLabel">每周总计消耗</span>
+            <span class="mini-val" id="val-delta-weekly">-0.00%</span>
+            <div class="progress-bar-container">
+              <div class="progress-bar-fill delta-fill-weekly" id="bar-delta-weekly" style="width: 0%"></div>
+            </div>
+            <span class="mini-footer" id="delta-detail-weekly">起点: --% -> 当前: --%</span>
+          </div>
+        </div>
+
+        <div class="tokens-mini-bar">
+          <span id="session-tot-tokens">总 Token: 0</span>
+          <span id="session-prompt-tokens">输入: 0</span>
+          <span id="session-output-tokens">生成: 0</span>
+          <span id="session-cache-ratio">缓存: 0%</span>
+        </div>
+      </div>
+    </details>
+
+    <!-- Global Quota Health & Reset Countdown (Collapsible) -->
+    <details class="section-details card" open>
+      <summary class="section-summary">
+        <span class="summary-title">
+          <svg class="section-svg" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="2" y1="12" x2="22" y2="12"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
+          <span data-i18n="global.title">全局账户配额健康度</span>
+        </span>
+        <span class="summary-badge" id="global-5h-badge">5h: --%</span>
+      </summary>
+
+      <div class="details-content global-quota-wrap">
+        <!-- 5-Hour Limit Remaining -->
+        <div class="quota-row">
+          <div class="quota-row-header">
+            <div class="quota-title-wrap">
+              <span class="quota-dot dot-5h"></span>
+              <span class="quota-title" data-i18n="global.5hTitle">5 小时配额限制</span>
+            </div>
+            <div class="quota-val-wrap">
+              <span class="quota-remaining-num" id="global-remain-5h">--%</span>
+              <span class="quota-label" data-i18n="global.remainLabel">剩余</span>
+            </div>
+          </div>
+          <div class="progress-bar-container large">
+            <div class="progress-bar-fill" id="global-bar-5h" style="width: 0%"></div>
+          </div>
+          <div class="quota-countdown-row">
+            <span class="countdown-label" data-i18n="global.countdownLabel">刷新倒计时:</span>
+            <span class="countdown-value" id="countdown-5h">计算中...</span>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Weekly Limit Remaining -->
+        <div class="quota-row">
+          <div class="quota-row-header">
+            <div class="quota-title-wrap">
+              <span class="quota-dot dot-weekly"></span>
+              <span class="quota-title" data-i18n="global.weeklyTitle">每周配额限制</span>
+            </div>
+            <div class="quota-val-wrap">
+              <span class="quota-remaining-num" id="global-remain-weekly">--%</span>
+              <span class="quota-label" data-i18n="global.remainLabel">剩余</span>
+            </div>
+          </div>
+          <div class="progress-bar-container large">
+            <div class="progress-bar-fill" id="global-bar-weekly" style="width: 0%"></div>
+          </div>
+          <div class="quota-countdown-row">
+            <span class="countdown-label" data-i18n="global.countdownLabel">刷新倒计时:</span>
+            <span class="countdown-value" id="countdown-weekly">计算中...</span>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <!-- Footer Notes -->
+    <footer class="app-footer">
+      <div class="footer-tip-row">
+        <svg class="footer-svg" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="16" x2="12" y2="12"/>
+          <line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+        <p class="footer-tip" data-i18n="tip.footer">
+          用户发送一次提问至 Agent 回复完成计为“一次对话”。配额按 Token 成本加权扣减，5 小时配额平滑突发请求，每周配额锚定个人订阅层级。
+        </p>
+      </div>
+    </footer>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

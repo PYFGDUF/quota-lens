@@ -1,0 +1,136 @@
+<p align="center">
+  <img src="assets/readme/hero.svg" alt="Quota Lens - Antigravity UI Extension" width="100%" />
+</p>
+
+<p align="center">
+  <strong>Native Conversation Quota & Token Consumption Tracker for Google Antigravity</strong><br>
+  Monitor turn-by-turn quota usage (5-hour & weekly limit %) for every single interaction, alongside global quota health and live refresh countdowns.
+</p>
+
+<p align="center">
+  <a href="README.md"><b>简体中文</b></a> &nbsp;|&nbsp; <a href="README_EN.md"><b>English</b></a>
+</p>
+
+---
+
+## Why Quota Lens?
+
+When pair programming with AI in Antigravity, developers often experience quota depletion abruptly without knowing how much quota each complex code generation or refactoring prompt actually consumed.
+
+| Dimension | Default Workflow (No Tracking) | With Quota Lens |
+| :--- | :--- | :--- |
+| **Per-Turn Cost** | Completely unknown until an unexpected rate limit popup | Real-time 5h & weekly quota deductions for the immediate prompt |
+| **Token Attribution** | Cannot measure prompt cache hits vs output token costs | Automatic breakdown of Input / Output / Cache ratio with weighted cost |
+| **Multi-Model Tracking** | Hard to tell whether Gemini or 3P models burned more quota | Instant toggle between Gemini and Claude & GPT 3P groups |
+| **Renewal Estimation** | Vague timestamps that make planning sessions difficult | Millisecond-level countdown timers to exact full reset times |
+| **System Overhead** | Heavy proxy agents or external database setups | **Zero external npm dependencies**, ultra-lightweight Node sidecar |
+
+---
+
+## Key Features
+
+- **Turn-by-Turn Quota Attribution (Core)**
+  - Defines each interaction turn strictly as "One User Prompt -> Completed Agent Response".
+  - Displays the quota consumed specifically by the **most recent turn** (e.g., `5h: -0.20% | Weekly: -0.05%`).
+  - Provides an interactive turns history breakdown with prompt snippets, token cost weights, and step durations.
+
+- **Dual Model Group Tracking**
+  - Native support for both **Gemini Models** (Flash / Pro) and **Claude & GPT 3P Models**.
+  - Switch smoothly between model group views to understand consumption patterns across different engines.
+
+- **Dynamic Countdowns & Global Quota Health**
+  - Live observation of official Language Server buckets (`gemini-5h`, `gemini-weekly`, `3p-5h`, `3p-weekly`).
+  - Computes exact remaining duration until full renewal with a second-by-second countdown ticker.
+
+- **Restrained IDE-Native Aesthetics & Bilingual i18n**
+  - Designed with low-saturation palette and pure SVG vector icons, **zero emoji clutter**.
+  - Seamless toggle between `en-US` and `zh-CN` across all UI labels, cards, countdowns, and dialogs.
+
+---
+
+## Architecture & How It Works
+
+<p align="center">
+  <img src="assets/readme/architecture.svg" alt="Quota Lens System Architecture" width="100%" />
+</p>
+
+### 1. Direct Language Server RPC
+Quota Lens requires no proxy or packet sniffers. Its sidecar directly queries the local Antigravity Language Server ConnectRPC service:
+```text
+POST http://${ANTIGRAVITY_LS_ADDRESS}/exa.language_server_pb.LanguageServerService/RetrieveUserQuotaSummary
+Headers: x-codeium-csrf-token: ${ANTIGRAVITY_CSRF_TOKEN}
+```
+
+### 2. Dynamic Baseline Differential
+- **Session Baseline**: Captures an initial snapshot $B = (B_{5h}, B_{weekly})$ when the session starts;
+- **Live Differential**: Compares ongoing live quota $C = (C_{5h}, C_{weekly})$ to calculate cumulative session consumption $\Delta = (B - C) \times 100\%$;
+- **Reset Awareness**: Detects whenever $C > B$ (quota renewed) and supports one-click "Reset Base" to restart tracking from any moment.
+
+### 3. Empirical Finding: The 4.0000 Periodic Rule
+Empirically verified across multiple production turns:
+$$\frac{\Delta 5\text{h}}{\Delta \text{Weekly}} \equiv 4.0000$$
+Your weekly quota capacity is numerically equivalent to exactly **four 5-hour burst refresh windows**.
+
+---
+
+## Installation & Quickstart
+
+### Option 1: Clone into Plugins Directory (Recommended)
+
+Run the following command in your terminal:
+
+```bash
+git clone https://github.com/pengyufeng/quota-lens.git ~/.gemini/config/plugins/quota-lens
+```
+
+### Option 2: Symbolic Link (For Local Development)
+
+If you already have the repository in your local workspace:
+
+```bash
+ln -s "$(pwd)" ~/.gemini/config/plugins/quota-lens
+```
+
+---
+
+## Enabling & Opening the Extension
+
+1. **Enable the Plugin**:
+   - Open the Antigravity desktop app;
+   - Click the **Customizations** icon at the bottom of the left sidebar;
+   - Under the **Installed** tab, find **Quota Lens** and toggle it **Enabled**.
+
+2. **Open the Side Pane**:
+   - Open any active chat conversation;
+   - Click the **⋮ (three dots menu)** in the top right corner;
+   - Select **Extensions** -> **Quota Lens**;
+   - The auxiliary side pane will open and begin live tracking!
+
+---
+
+## Repository Structure
+
+```text
+quota-lens/
+├── plugin.json                       # Plugin manifest declaration
+├── LICENSE                           # MIT Open Source License
+├── assets/
+│   ├── logo.svg                      # Clean vector plugin logo
+│   └── readme/
+│       ├── hero.svg                  # High-resolution README hero banner
+│       └── architecture.svg          # System architecture vector diagram
+└── sidecars/
+    └── panel/
+        ├── package.json              # Sidecar metadata (Zero Dependencies)
+        ├── sidecar.json              # Auxiliary pane view registration
+        ├── main.mjs                  # Backend engine: ConnectRPC, delta computation, transcript parser
+        ├── index.html                # Frontend markup: pure vector SVG UI, i18n placeholders
+        ├── app.js                    # Frontend logic: i18n engine, polling, countdown tickers
+        └── styles.css                # Adaptive theme stylesheet (light & dark mode compliant)
+```
+
+---
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).

@@ -1,0 +1,18 @@
+{
+  "command": "node",
+  "args": ["main.mjs"],
+  "restart_policy": "always",
+  "display_name": "Quota Lens",
+  "description": "实时查看单次会话消耗的 5 小时与每周配额，监控模型全局配额健康度",
+  "has_web_ui": true,
+  "ui_config": {
+    "display_name": "Quota Lens",
+    "views": [
+      {
+        "path": "/",
+        "entrypoint": "SIDECAR_UI_ENTRYPOINT_AUX_PANE",
+        "title": "Quota Lens"
+      }
+    ]
+  }
+}

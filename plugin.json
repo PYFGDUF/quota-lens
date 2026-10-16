@@ -1,0 +1,5 @@
+{
+  "name": "quota-lens",
+  "description": "Antigravity 原生配额透视扩展：实时查看单次会话消耗的 5 小时与每周配额，监控模型组全局配额健康度与刷新倒计时。",
+  "logo": "assets/logo.svg"
+}
