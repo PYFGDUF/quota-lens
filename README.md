@@ -85,12 +85,15 @@ $$\frac{\Delta 5\text{h}}{\Delta \text{Weekly}} \equiv 4.0000$$
 ### 5. 双模型组引擎与 Claude & GPT 组特性说明
 插件支持同时观测 **Gemini 模型组** 与 **Claude & GPT 模型组** 的配额走向，并根据每次交互实际启用的模型自动归属物理消耗。
 
+本插件的所有配额物理模型、加权常数与基准容量分母，均基于 **Gemini Pro（Powered By Jio）** 账号环境经由全量程实测推算标定。
+
 > [!WARNING]
 > **关于 Claude & GPT 模型组用量检测准确性的重要提示**
 > 
+> - **基准环境声明**：全库配额计算基于 **Gemini Pro（Powered By Jio）** 实测标定。不同订阅渠道（如 Google One AI Premium、Google Workspace 企业版等）的配额池容量与策略可能有所差异。
 > - **Gemini 模型组**：经过数百次真实对话调用与分桶标定，加权 Token 物理模型（出词 3x、缓存 0.05x，基准容量 280,000）与语言服务分桶消耗高度吻合，统计精度极高。
-> - **Claude & GPT 模型组**：插件根据 Claude 官方 API 计费比例（出词 5x、缓存读取 0.1x）以及实测满量程极限样本（94.7% 消耗跨度）校准了基准容量分母（240,000 加权 Token），并验证了其特有的 **2.0000 周期定律**（即 $\frac{\Delta 5\text{h}}{\Delta \text{Weekly}} \equiv 2.0000$）。
-> - **准确性免责提示**：由于 Google 后端对第三方模型（Claude Opus、Claude Sonnet、GPT-OSS 等）的配额池规模、账号等级（Pro 会员、Google One AI Premium、Workspace 企业版）扣减策略和异步批处理延迟各不相同，**Claude & GPT 组的用量检测与估算可能存在偏差，更适合作为任务规划的趋势与相对消耗参考；最终权威剩余配额请以 Antigravity 官方语言服务返回的全局状态栏为准**。
+> - **Claude & GPT 模型组**：插件根据 Claude 官方 API 计费比例（出词 5x、缓存读取 0.1x）以及实测满量程极限样本（94.7% 消耗跨度）校准了基准容量分母（每 1% 配额消耗对应 2,400 加权 Token，100% 满额对应 240,000），并验证了其特有的 **2.0000 周期定律**（即 $\frac{\Delta 5\text{h}}{\Delta \text{Weekly}} \equiv 2.0000$）。
+> - **准确性免责提示**：由于 Google 后端对第三方模型（Claude Opus、Claude Sonnet、GPT-OSS 等）的配额池规模、账号等级扣减策略和异步批处理延迟各不相同，**Claude & GPT 组的用量检测与估算可能存在偏差，更适合作为任务规划的趋势与相对消耗参考；最终权威剩余配额请以 Antigravity 官方语言服务返回的全局状态栏为准**。
 
 ---
 

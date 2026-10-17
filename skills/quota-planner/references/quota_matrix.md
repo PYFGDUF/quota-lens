@@ -1,6 +1,6 @@
 # 配额消耗测算矩阵与模型换算参考 (Quota Estimation Matrix)
 
-本文档提供在任务规划（/plan）阶段预估 Antigravity 配额消耗的经验常数与换算矩阵。
+本文档提供在任务规划（/plan）阶段预估 Antigravity 配额消耗的经验常数与换算矩阵。所有基准常数与物理分母均基于 **Gemini Pro（Powered By Jio）** 订阅环境经由全量程实测推算标定。
 
 ---
 

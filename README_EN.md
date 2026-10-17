@@ -85,12 +85,15 @@ Your weekly quota capacity is numerically equivalent to exactly **four 5-hour bu
 ### 5. Multi-Group Engine & Claude / GPT Group Notice
 Quota Lens supports real-time observation of both the **Gemini Models Group** and the **Claude & GPT Models Group**, automatically attributing token consumption based on the active model of each interaction.
 
+All quota physics models, weighting constants, and capacity denominators in this extension are empirically derived and calibrated on a **Gemini Pro (Powered By Jio)** subscription environment.
+
 > [!WARNING]
 > **Important Notice on Accuracy for Claude & GPT Model Group Usage Detection**
 > 
-> - **Gemini Models Group**: Rigorously calibrated across hundreds of real turns against language server buckets; weighted token formulas (3x output, 0.05x cache read, 280,000 capacity denominator) provide high fidelity.
-> - **Claude & GPT Models Group**: Third-party models are calibrated against Claude official API pricing ratios (5x output weight, 0.1x cache read weight) with an empirical full-range stress test (94.7% consumption span), discovering an exact **2.0000 periodic rule** ($\frac{\Delta 5\text{h}}{\Delta \text{Weekly}} \equiv 2.0000$).
-> - **Accuracy Caveat**: Google backend third-party quota pools, account tiers (Pro subscribers, Google One AI Premium, Workspace enterprise), and asynchronous batching policies vary. **Figures for the Claude & GPT group serve as helpful trend and relative usage estimators; authoritative remaining allowances remain those reported by Google's official language server**.
+> - **Subscription Baseline**: All quota calculations are calibrated based on **Gemini Pro (Powered By Jio)**. Quota pool sizes and refresh policies may vary across other subscription channels (such as Google One AI Premium or Google Workspace enterprise tiers).
+> - **Gemini Models Group**: Rigorously calibrated across hundreds of real turns against language server buckets; weighted token formulas (3x output, 0.05x cache read, 280,000 capacity denominator per 1%) provide high fidelity.
+> - **Claude & GPT Models Group**: Third-party models are calibrated against Claude official API pricing ratios (5x output weight, 0.1x cache read weight) with an empirical full-range stress test (94.7% consumption span, 2,400 units per 1%), discovering an exact **2.0000 periodic rule** ($\frac{\Delta 5\text{h}}{\Delta \text{Weekly}} \equiv 2.0000$).
+> - **Accuracy Caveat**: Google backend third-party quota pools, account tiers, and asynchronous batching policies vary. **Figures for the Claude & GPT group serve as helpful trend and relative usage estimators; authoritative remaining allowances remain those reported by Google's official language server**.
 
 ---
 
