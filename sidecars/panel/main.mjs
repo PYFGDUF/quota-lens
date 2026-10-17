@@ -48,13 +48,26 @@ function ensureDataDir() {
 }
 
 function loadConfig() {
+  const defaults = {
+    autoRefresh: true,
+    refreshIntervalSec: 8,
+    defaultGroup: 'gemini',
+    lang: 'auto',
+    // Capacity benchmarks (calibrated on Gemini Pro Powered by Jio)
+    // Weighted token units consumed per 1% quota
+    geminiDenom5h: 280000,
+    geminiWeeklyRatio: 4.0,
+    threePDenom5h: 2400,
+    threePWeeklyRatio: 2.0
+  };
   if (!existsSync(CONFIG_FILE)) {
-    return { autoRefresh: true, refreshIntervalSec: 8, defaultGroup: 'gemini', lang: 'auto' };
+    return defaults;
   }
   try {
-    return JSON.parse(readFileSync(CONFIG_FILE, 'utf8'));
+    const parsed = JSON.parse(readFileSync(CONFIG_FILE, 'utf8'));
+    return { ...defaults, ...parsed };
   } catch {
-    return { autoRefresh: true, refreshIntervalSec: 8, defaultGroup: 'gemini', lang: 'auto' };
+    return defaults;
   }
 }
 
@@ -414,16 +427,22 @@ function parseSubagentTranscript(subId, meta, defaultGroup = 'gemini') {
     let consumed3p5h = 0;
     let consumed3pWeekly = 0;
 
+    const cfg = loadConfig();
+    const gDenom = Number(cfg.geminiDenom5h) || 280000;
+    const gRatio = Number(cfg.geminiWeeklyRatio) || 4.0;
+    const pDenom = Number(cfg.threePDenom5h) || 2400;
+    const pRatio = Number(cfg.threePWeeklyRatio) || 2.0;
+
     if (is3pSub) {
-      // 3P (Claude/GPT) capacity: 100% = 240,000 weighted token units; 1% = 2,400 units (weekly = 5h / 2.0)
+      // 3P (Claude/GPT) capacity (default: 100% = 240,000 units, 1% = 2,400 units; weekly = 5h / 2.0)
       const cost3p = subIn + (5.0 * subOut) + (0.1 * subCache);
-      consumed3p5h = cost3p / 2400;
-      consumed3pWeekly = consumed3p5h / 2.0;
+      consumed3p5h = cost3p / pDenom;
+      consumed3pWeekly = consumed3p5h / pRatio;
     } else {
-      // Gemini weight: 1*in + 3*out + 0.05*cache  (calibrated denom=280000; weekly=5h/4.0)
+      // Gemini weight: 1*in + 3*out + 0.05*cache (default: 100% = 28,000,000 units, 1% = 280,000 units; weekly = 5h / 4.0)
       const costWeight = subIn + (3.0 * subOut) + (0.05 * subCache);
-      consumed5h = costWeight / 280000;
-      consumedWeekly = consumed5h / 4.0;
+      consumed5h = costWeight / gDenom;
+      consumedWeekly = consumed5h / gRatio;
     }
 
     return {
@@ -752,6 +771,12 @@ function calculateSessionAndTurnDeltas(convId, currentBuckets, transcriptStats) 
   }
 
   // 1. Process all turns with deterministic token-based quota physics engine
+  const cfg = loadConfig();
+  const gDenom = Number(cfg.geminiDenom5h) || 280000;
+  const gRatio = Number(cfg.geminiWeeklyRatio) || 4.0;
+  const pDenom = Number(cfg.threePDenom5h) || 2400;
+  const pRatio = Number(cfg.threePWeeklyRatio) || 2.0;
+
   const turns = transcriptStats.turns || [];
   for (const t of turns) {
     const is3pTurn = t.modelGroup === '3p';
@@ -767,15 +792,15 @@ function calculateSessionAndTurnDeltas(convId, currentBuckets, transcriptStats) 
     let mainConsumed3pWeekly = 0;
 
     if (is3pTurn) {
-      // 3P (Claude/GPT) capacity: 100% = 240,000 weighted token units; 1% = 2,400 units (weekly = 5h / 2.0)
+      // 3P (Claude/GPT) capacity (default: 100% = 240,000 units, 1% = 2,400 units; weekly = 5h / 2.0)
       const mainCost3p = mainIn + (5.0 * mainOut) + (0.1 * mainCache);
-      mainConsumed3p5h = mainCost3p / 2400;
-      mainConsumed3pWeekly = mainConsumed3p5h / 2.0;
+      mainConsumed3p5h = mainCost3p / pDenom;
+      mainConsumed3pWeekly = mainConsumed3p5h / pRatio;
     } else {
-      // Gemini weight: 1*in + 3*out + 0.05*cache  (calibrated denom=280000; weekly=5h/4.0)
+      // Gemini weight: 1*in + 3*out + 0.05*cache (default: 100% = 28,000,000 units, 1% = 280,000 units; weekly = 5h / 4.0)
       const mainCostWeight = mainIn + (3.0 * mainOut) + (0.05 * mainCache);
-      mainConsumed5h = mainCostWeight / 280000;
-      mainConsumedWeekly = mainConsumed5h / 4.0;
+      mainConsumed5h = mainCostWeight / gDenom;
+      mainConsumedWeekly = mainConsumed5h / gRatio;
     }
 
     // Subagents cost summation

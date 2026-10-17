@@ -133,6 +133,59 @@ ln -s "$(pwd)" ~/.gemini/config/plugins/quota-lens
 
 ---
 
+## 自定义配置：适配其他会员方案（Google One / Workspace 等）
+
+本插件的内置基准常数与物理分母均基于 **Gemini Pro（Powered By Jio）** 订阅环境标定。如果您使用的是其他会员方案（例如 **Google One AI Premium**、**Google Workspace 商业版/企业版** 或企业组织授权），各模型组的配额池规模可能有所差异。
+
+您可以按照以下指引轻松测算并自定义您自己账号的配额分母。
+
+### 1. 测算自己账号的基准分母（极简 3 步法）
+
+1. **记录初始状态**：打开 Quota Lens 面板，记录当前模型组的 5 小时剩余配额 $R_1$（例如 $100.00\%$）；
+2. **执行一次典型交互**：向 Agent 发起一次交互（例如一段简单的代码生成），在交互结束后查看该轮问答卡片底部的 Token 统计：
+   - 记录输入 Token $T_{\text{in}}$、输出 Token $T_{\text{out}}$ 以及缓存读取 $T_{\text{cache}}$；
+   - **计算该轮加权 Token $W$**：
+     - 若为 **Gemini 模型**：$W = T_{\text{in}} + 3.0 \times T_{\text{out}} + 0.05 \times T_{\text{cache}}$
+     - 若为 **Claude / GPT 模型**：$W = T_{\text{in}} + 5.0 \times T_{\text{out}} + 0.1 \times T_{\text{cache}}$
+3. **推算每 1% 刻度分母**：查看交互后官方全局状态栏扣减的实际百分比 $\Delta R = R_1 - R_2$（例如扣减了 $0.50\%$）：
+   $$\text{每 1% 配额分母 (Denom)} = \frac{W}{\Delta R}$$
+   *(例如：某次 Claude 调用加权 Token 为 24,000，扣减了 10.0%，则每 1% 分母为 $24,000 / 10.0 = 2,400$)*
+
+### 2. 通过配置文件自定义分母（免改源码）
+
+插件支持通过配置文件无缝覆盖默认的基准分母。配置文件路径位于插件数据目录：
+
+- **全局插件路径**：`~/.gemini/config/plugins/quota-lens/sidecars/panel/.data/config.json`
+- **本地开发路径**：`<仓库根目录>/sidecars/panel/.data/config.json`
+
+在该文件中加入如下配置字段即可（若文件不存在可直接创建）：
+
+```json
+{
+  "autoRefresh": true,
+  "refreshIntervalSec": 8,
+  "defaultGroup": "gemini",
+  "lang": "zh-CN",
+  "geminiDenom5h": 280000,
+  "geminiWeeklyRatio": 4.0,
+  "threePDenom5h": 2400,
+  "threePWeeklyRatio": 2.0
+}
+```
+
+#### 配置参数说明：
+
+| 配置键名 | 默认值 (Jio 方案) | 参数说明 |
+| :--- | :--- | :--- |
+| `geminiDenom5h` | `280000` | Gemini 5 小时配额中，每消耗 1% 对应的加权 Token 数 |
+| `geminiWeeklyRatio` | `4.0` | Gemini 每周配额与 5 小时配额的周期换算比（Weekly = 5h / Ratio） |
+| `threePDenom5h` | `2400` | Claude & GPT 5 小时配额中，每消耗 1% 对应的加权 Token 数 |
+| `threePWeeklyRatio` | `2.0` | Claude & GPT 每周配额与 5 小时配额的周期换算比 |
+
+保存配置文件后，重新打开 Antigravity 或重新展开面板，Quota Lens 即会自动应用您的专属分母进行测算。
+
+---
+
 ## 项目结构
 
 ```text

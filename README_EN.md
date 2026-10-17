@@ -132,6 +132,59 @@ ln -s "$(pwd)" ~/.gemini/config/plugins/quota-lens
 
 ---
 
+## Custom Configuration: Adapting Other Membership Plans (Google One / Workspace)
+
+The built-in empirical constants and physical denominators of this extension are calibrated for the **Gemini Pro (Powered By Jio)** subscription. If you are using another membership tier (such as **Google One AI Premium**, **Google Workspace Business/Enterprise**, or organizational enterprise tiers), your available quota pool capacity may differ.
+
+You can easily calibrate and configure your own custom quota denominators using the guide below.
+
+### 1. Calibrating Your Account Denominators (3-Step Method)
+
+1. **Record Initial Baseline**: Open the Quota Lens side pane and note your current 5-hour remaining quota $R_1$ (e.g. $100.00\%$);
+2. **Execute a Typical Turn**: Prompt the Agent for a standard operation (e.g., generating a function or small module). After completion, check the token statistics at the bottom of the turn card:
+   - Note input tokens $T_{\text{in}}$, output tokens $T_{\text{out}}$, and cache read tokens $T_{\text{cache}}$;
+   - **Compute Weighted Tokens $W$**:
+     - For **Gemini Models**: $W = T_{\text{in}} + 3.0 \times T_{\text{out}} + 0.05 \times T_{\text{cache}}$
+     - For **Claude / GPT Models**: $W = T_{\text{in}} + 5.0 \times T_{\text{out}} + 0.1 \times T_{\text{cache}}$
+3. **Derive the 1% Denominator**: Note the official remaining quota decrease $\Delta R = R_1 - R_2$ (e.g. consumed $0.50\%$):
+   $$\text{Per 1% Quota Denominator (Denom)} = \frac{W}{\Delta R}$$
+   *(Example: If a Claude turn generated 24,000 weighted tokens and consumed 10.0%, then your per 1% denominator is $24,000 / 10.0 = 2,400$)*
+
+### 2. Customizing Denominators via Config File (No Code Changes)
+
+Quota Lens supports overriding default benchmark denominators via a local configuration file:
+
+- **Global Plugin Path**: `~/.gemini/config/plugins/quota-lens/sidecars/panel/.data/config.json`
+- **Local Dev Path**: `<repo-root>/sidecars/panel/.data/config.json`
+
+Simply add the following fields to the JSON file (create it if it does not exist):
+
+```json
+{
+  "autoRefresh": true,
+  "refreshIntervalSec": 8,
+  "defaultGroup": "gemini",
+  "lang": "en-US",
+  "geminiDenom5h": 280000,
+  "geminiWeeklyRatio": 4.0,
+  "threePDenom5h": 2400,
+  "threePWeeklyRatio": 2.0
+}
+```
+
+#### Parameter Reference:
+
+| Parameter Key | Default (Jio Tier) | Description |
+| :--- | :--- | :--- |
+| `geminiDenom5h` | `280000` | Weighted token units consumed per 1% of Gemini 5-hour quota |
+| `geminiWeeklyRatio` | `4.0` | Periodic ratio between weekly and 5-hour Gemini quota (Weekly = 5h / Ratio) |
+| `threePDenom5h` | `2400` | Weighted token units consumed per 1% of Claude & GPT 5-hour quota |
+| `threePWeeklyRatio` | `2.0` | Periodic ratio between weekly and 5-hour 3P quota |
+
+After saving, reopen Antigravity or reopen the side panel, and Quota Lens will immediately calculate consumption using your personalized subscription baselines.
+
+---
+
 ## Repository Structure
 
 ```text
