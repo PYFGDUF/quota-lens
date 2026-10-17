@@ -437,17 +437,17 @@ function calculateSessionAndTurnDeltas(convId, currentBuckets, transcriptStats) 
     // Cache read tokens: cached discount weight 0.10
     const costWeight = (t.inputTokens || 0) + 
                        (3.0 * (t.outputTokens || 0)) + 
-                       (0.10 * (t.cacheReadTokens || 0));
+                       (0.05 * (t.cacheReadTokens || 0));
 
-    // Capacity constants based on empirical Antigravity telemetry:
-    // 5-hour quota full capacity: 2,500,000 weighted token units (100%)
-    // Weekly quota full capacity: 10,000,000 weighted token units (100%)
+    // Capacity calibration based on empirical Antigravity telemetry:
+    // Real 5-hour quota capacity: ~28,000,000 weighted token units (280,000 units per 1%)
+    // Real Weekly quota capacity: ~112,000,000 weighted token units (1,120,000 units per 1%)
     // Strict periodic ratio: 5h / Weekly == 4.0000
-    const consumed5h = costWeight / 25000;
+    const consumed5h = costWeight / 280000;
     const consumedWeekly = consumed5h / 4.0;
 
-    // 3P models (Claude 3.7 Sonnet / Opus) cost multiplier: ~2.0x
-    const consumed3p5h = (costWeight * 2.0) / 25000;
+    // 3P models (Claude 3.7 Sonnet / Opus) bucket capacity: ~14,000,000 units
+    const consumed3p5h = costWeight / 140000;
     const consumed3pWeekly = consumed3p5h / 4.0;
 
     t.quota = {
