@@ -415,9 +415,9 @@ function parseSubagentTranscript(subId, meta, defaultGroup = 'gemini') {
     let consumed3pWeekly = 0;
 
     if (is3pSub) {
-      // 3P (Claude/GPT) weight: 1*in + 5*out + 0.1*cache  (calibrated denom=240000; weekly=5h/2.0)
+      // 3P (Claude/GPT) capacity: 100% = 240,000 weighted token units; 1% = 2,400 units (weekly = 5h / 2.0)
       const cost3p = subIn + (5.0 * subOut) + (0.1 * subCache);
-      consumed3p5h = cost3p / 240000;
+      consumed3p5h = cost3p / 2400;
       consumed3pWeekly = consumed3p5h / 2.0;
     } else {
       // Gemini weight: 1*in + 3*out + 0.05*cache  (calibrated denom=280000; weekly=5h/4.0)
@@ -767,9 +767,9 @@ function calculateSessionAndTurnDeltas(convId, currentBuckets, transcriptStats) 
     let mainConsumed3pWeekly = 0;
 
     if (is3pTurn) {
-      // 3P (Claude/GPT) weight: 1*in + 5*out + 0.1*cache  (calibrated denom=240000; weekly=5h/2.0)
+      // 3P (Claude/GPT) capacity: 100% = 240,000 weighted token units; 1% = 2,400 units (weekly = 5h / 2.0)
       const mainCost3p = mainIn + (5.0 * mainOut) + (0.1 * mainCache);
-      mainConsumed3p5h = mainCost3p / 240000;
+      mainConsumed3p5h = mainCost3p / 2400;
       mainConsumed3pWeekly = mainConsumed3p5h / 2.0;
     } else {
       // Gemini weight: 1*in + 3*out + 0.05*cache  (calibrated denom=280000; weekly=5h/4.0)
