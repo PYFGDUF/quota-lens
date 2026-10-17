@@ -50,6 +50,7 @@
       'session.5hLabel': '5 小时总计消耗',
       'session.weeklyLabel': '每周总计消耗',
       'session.detail': '起点: {base}% -> 当前: {curr}%',
+      'session.detailRefreshed': '起点: {base}% -> 当前: {curr}% (会话期间已刷新)',
       'session.totTokens': '总 Token: {n}',
       'session.inTokens': '输入: {n}',
       'session.outTokens': '生成: {n}',
@@ -111,6 +112,7 @@
       'session.5hLabel': '5-Hour Total Consumed',
       'session.weeklyLabel': 'Weekly Total Consumed',
       'session.detail': 'Base: {base}% -> Now: {curr}%',
+      'session.detailRefreshed': 'Base: {base}% -> Now: {curr}% (Refreshed in session)',
       'session.totTokens': 'Total Tokens: {n}',
       'session.inTokens': 'Input: {n}',
       'session.outTokens': 'Output: {n}',
@@ -396,14 +398,16 @@
 
     valDelta5h.textContent = `-${tot5h.toFixed(2)}%`;
     barDelta5h.style.width = `${Math.min(100, (tot5h / 15) * 100)}%`;
-    deltaDetail5h.textContent = t('session.detail', {
+    const detailKey5h = delta5h?.refreshed ? 'session.detailRefreshed' : 'session.detail';
+    deltaDetail5h.textContent = t(detailKey5h, {
       base: delta5h?.baselineFraction ?? '--',
       curr: delta5h?.currentFraction ?? '--'
     });
 
     valDeltaWeekly.textContent = `-${totWeekly.toFixed(2)}%`;
     barDeltaWeekly.style.width = `${Math.min(100, (totWeekly / 8) * 100)}%`;
-    deltaDetailWeekly.textContent = t('session.detail', {
+    const detailKeyWeekly = deltaWeekly?.refreshed ? 'session.detailRefreshed' : 'session.detail';
+    deltaDetailWeekly.textContent = t(detailKeyWeekly, {
       base: deltaWeekly?.baselineFraction ?? '--',
       curr: deltaWeekly?.currentFraction ?? '--'
     });

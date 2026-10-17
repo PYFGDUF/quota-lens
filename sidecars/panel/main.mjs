@@ -422,29 +422,83 @@ function calculateSessionAndTurnDeltas(convId, currentBuckets, transcriptStats) 
       conversationId: convId,
       baselineTime: now,
       baselineBuckets,
-      turnSnapshots: {},
+      baselineTurnIndex: 0,
       lastUpdated: now
     };
     store[convId] = session;
     saveSessionStore(store);
   }
 
-  // 1. Calculate overall session deltas
+  // 1. Process all turns with deterministic token-based quota physics engine
+  const turns = transcriptStats.turns || [];
+  for (const t of turns) {
+    // Input tokens: base weight 1.0
+    // Output tokens: base weight 3.0
+    // Cache read tokens: cached discount weight 0.10
+    const costWeight = (t.inputTokens || 0) + 
+                       (3.0 * (t.outputTokens || 0)) + 
+                       (0.10 * (t.cacheReadTokens || 0));
+
+    // Capacity constants based on empirical Antigravity telemetry:
+    // 5-hour quota full capacity: 2,500,000 weighted token units (100%)
+    // Weekly quota full capacity: 10,000,000 weighted token units (100%)
+    // Strict periodic ratio: 5h / Weekly == 4.0000
+    const consumed5h = costWeight / 25000;
+    const consumedWeekly = consumed5h / 4.0;
+
+    // 3P models (Claude 3.7 Sonnet / Opus) cost multiplier: ~2.0x
+    const consumed3p5h = (costWeight * 2.0) / 25000;
+    const consumed3pWeekly = consumed3p5h / 4.0;
+
+    t.quota = {
+      gemini: {
+        consumed5h: Math.round(consumed5h * 100) / 100,
+        consumedWeekly: Math.round(consumedWeekly * 100) / 100
+      },
+      '3p': {
+        consumed5h: Math.round(consumed3p5h * 100) / 100,
+        consumedWeekly: Math.round(consumed3pWeekly * 100) / 100
+      }
+    };
+  }
+
+  // 2. Sum session cumulative consumed quota
+  // If baselineTurnIndex is set (e.g. from manual baseline reset), sum only turns after that index
+  const baselineIndex = session.baselineTurnIndex || 0;
+  const activeTurns = turns.filter(t => t.turnIndex > baselineIndex);
+
+  let sessionGemini5h = 0;
+  let sessionGeminiWeekly = 0;
+  let session3p5h = 0;
+  let session3pWeekly = 0;
+
+  for (const t of activeTurns) {
+    sessionGemini5h += t.quota?.gemini?.consumed5h || 0;
+    sessionGeminiWeekly += t.quota?.gemini?.consumedWeekly || 0;
+    session3p5h += t.quota?.['3p']?.consumed5h || 0;
+    session3pWeekly += t.quota?.['3p']?.consumedWeekly || 0;
+  }
+
+  // 3. Calculate session deltas & detect global bucket refresh/recovery
   const sessionDeltas = {};
   for (const [id, curr] of Object.entries(currentBuckets)) {
     const base = session.baselineBuckets?.[id];
     const baseFraction = typeof base?.fraction === 'number' ? base.fraction : curr.remainingFraction;
     const currFraction = curr.remainingFraction;
 
-    let consumedPercent = 0;
+    // Detect if bucket was reset or refreshed:
+    // (a) current remaining fraction is higher than base fraction by > 2%
+    // (b) resetTime changed to a new cycle
     let refreshed = false;
-
-    if (currFraction > baseFraction + 0.005) {
+    if (currFraction > baseFraction + 0.02 || (base?.resetTime && curr.resetTime && base.resetTime !== curr.resetTime)) {
       refreshed = true;
-      consumedPercent = 0;
-    } else {
-      consumedPercent = Math.max(0, (baseFraction - currFraction) * 100);
     }
+
+    let consumedPercent = 0;
+    if (id === 'gemini-5h') consumedPercent = sessionGemini5h;
+    else if (id === 'gemini-weekly') consumedPercent = sessionGeminiWeekly;
+    else if (id === '3p-5h') consumedPercent = session3p5h;
+    else if (id === '3p-weekly') consumedPercent = session3pWeekly;
 
     sessionDeltas[id] = {
       bucketId: id,
@@ -460,51 +514,13 @@ function calculateSessionAndTurnDeltas(convId, currentBuckets, transcriptStats) 
     };
   }
 
-  // 2. Allocate and compute per-turn quota deltas
-  const turns = transcriptStats.turns || [];
-  const totalCostWeight = turns.reduce((acc, t) => acc + (t.costWeight || 0), 0);
-
-  // Gemini & 3P bucket mappings
-  const totalGemini5hConsumed = sessionDeltas['gemini-5h']?.consumedPercent || 0;
-  const totalGeminiWeeklyConsumed = sessionDeltas['gemini-weekly']?.consumedPercent || 0;
-  const total3p5hConsumed = sessionDeltas['3p-5h']?.consumedPercent || 0;
-  const total3pWeeklyConsumed = sessionDeltas['3p-weekly']?.consumedPercent || 0;
-
-  for (const t of turns) {
-    const weightFraction = totalCostWeight > 0 ? (t.costWeight / totalCostWeight) : (1 / Math.max(1, turns.length));
-
-    // Turn Quota Consumed
-    let turn5h = totalGemini5hConsumed * weightFraction;
-    let turnWeekly = totalGeminiWeeklyConsumed * weightFraction;
-
-    let turn3p5h = total3p5hConsumed * weightFraction;
-    let turn3pWeekly = total3pWeeklyConsumed * weightFraction;
-
-    // Fallback estimation if session delta is near 0 or just started:
-    if (turn5h < 0.001 && t.costWeight > 0) {
-      const estimated5h = (t.costWeight / 100000) * 0.75;
-      turn5h = estimated5h;
-      turnWeekly = estimated5h * 0.25;
-    }
-
-    t.quota = {
-      gemini: {
-        consumed5h: Math.round(turn5h * 100) / 100,
-        consumedWeekly: Math.round(turnWeekly * 100) / 100
-      },
-      '3p': {
-        consumed5h: Math.round(turn3p5h * 100) / 100,
-        consumedWeekly: Math.round(turn3pWeekly * 100) / 100
-      }
-    };
-  }
-
   session.lastUpdated = now;
   store[convId] = session;
   saveSessionStore(store);
 
   return {
     baselineTime: session.baselineTime,
+    baselineTurnIndex: session.baselineTurnIndex || 0,
     sessionDeltas,
     turns
   };
@@ -568,16 +584,18 @@ app.api('/api/reset-baseline', async (data) => {
     };
   }
 
+  const transcriptStats = parseTranscriptTurns(convId);
+  const currentTurnCount = (transcriptStats.turns || []).length;
+
   store[convId] = {
     conversationId: convId,
     baselineTime: now,
+    baselineTurnIndex: currentTurnCount,
     baselineBuckets,
-    turnSnapshots: {},
     lastUpdated: now
   };
   saveSessionStore(store);
 
-  const transcriptStats = parseTranscriptTurns(convId);
   const sessionAnalysis = calculateSessionAndTurnDeltas(convId, currentBuckets, transcriptStats);
 
   return {
