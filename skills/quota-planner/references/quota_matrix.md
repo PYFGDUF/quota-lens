@@ -54,7 +54,7 @@ $$\frac{\Delta 5\text{h}}{\Delta \text{Weekly}} \equiv 4.0000$$
 ### 4.2 模型选择系数 (Model Multipliers)
 - **Gemini 2.5 Pro**：基准系数 $1.0\times$。
 - **Gemini 2.5 Flash / Flash Lite**：成本系数约为 $0.15\times - 0.25\times$。若在任务中将非核心检索或代码扫描委托给 Flash 模型，可显著降低配额损耗。
-- **Claude / GPT 3p 组**：独立计费分桶（`3p-5h` 与 `3p-weekly`），与 Gemini 组配额互不挤占。
+- **Claude / GPT 3p 组**：独立计费分桶（`3p-5h` 与 `3p-weekly`），与 Gemini 组配额互不挤占。实测表明其 5h/Weekly 周期比为 **2.0000**（即周配额是 5 小时配额的 2 倍容量，而非 Gemini 组的 4 倍），官方定价权重折算为输入 1x、输出 5x、缓存读取 0.1x，5h 基准分母为 240,000 加权 Token。第三方模型配额池容量较小，重度任务规划时需特别注意余量。
 
 ---
 

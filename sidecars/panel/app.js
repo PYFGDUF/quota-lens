@@ -383,8 +383,14 @@
 
     // 4. Render Latest Turn Card
     const latest = data.latestTurn;
+    const latestModelBadge = document.getElementById('latest-turn-model-badge');
     if (latest) {
       latestTurnChip.textContent = t('latest.turnChip', { n: latest.turnIndex });
+      if (latestModelBadge) {
+        latestModelBadge.style.display = 'inline-flex';
+        latestModelBadge.className = `turn-model-badge ${latest.modelGroup === '3p' ? 'model-3p' : 'model-gemini'}`;
+        latestModelBadge.textContent = latest.modelGroup === '3p' ? 'Claude / GPT' : 'Gemini';
+      }
       latestTurnTime.textContent = formatTime(latest.startTime);
       latestPromptQuote.innerHTML = renderTurnPromptHtml(latest);
 
@@ -398,6 +404,7 @@
       latestTurnCache.textContent = t('meta.cacheHit', { pct: latest.cacheHitRatio || 0 });
     } else {
       latestTurnChip.textContent = t('latest.noTurnChip');
+      if (latestModelBadge) latestModelBadge.style.display = 'none';
       latestTurnTime.textContent = '--';
       latestPromptQuote.textContent = t('latest.noInteraction');
       latestTurn5h.textContent = '-0.00%';
@@ -447,8 +454,8 @@
       if (bd && bd.subagentCount > 0) {
         sessionSubagentBar.style.display = 'flex';
         sessionSubagentCountText.textContent = t('subagents.count', { n: bd.subagentCount });
-        const h5 = activeGroup === 'gemini' ? bd.subagentGemini5h : bd.subagentGemini5h * 2;
-        const wk = activeGroup === 'gemini' ? bd.subagentGeminiWeekly : bd.subagentGeminiWeekly * 2;
+        const h5 = activeGroup === 'gemini' ? bd.subagentGemini5h : (bd.subagent3p5h ?? 0);
+        const wk = activeGroup === 'gemini' ? bd.subagentGeminiWeekly : (bd.subagent3pWeekly ?? 0);
         sessionSubagentUsageText.textContent = t('subagents.sessionSubStat', {
           n: bd.subagentCount,
           h5: (h5 || 0).toFixed(2),
@@ -580,7 +587,10 @@
 
       card.innerHTML = `
         <div class="turn-card-top">
-          <span class="turn-badge-pill">${t('turns.turnPill', { n: tItem.turnIndex })}</span>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span class="turn-badge-pill">${t('turns.turnPill', { n: tItem.turnIndex })}</span>
+            <span class="turn-model-badge ${tItem.modelGroup === '3p' ? 'model-3p' : 'model-gemini'}">${escapeHtml(tItem.modelGroup === '3p' ? 'Claude / GPT' : 'Gemini')}</span>
+          </div>
           <span class="turn-time-stamp">${formatTime(tItem.startTime)} (${tItem.durationSec || 0}s)</span>
         </div>
         <div class="turn-prompt-snippet">

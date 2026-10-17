@@ -351,7 +351,7 @@ function parseSubagentMetaFromArgs(rawArgs, fullStep) {
   return [];
 }
 
-function parseSubagentTranscript(subId, meta) {
+function parseSubagentTranscript(subId, meta, defaultGroup = 'gemini') {
   const defaultRes = {
     conversationId: subId,
     role: meta?.Role || meta?.role || meta?.TypeName || meta?.typeName || 'Subagent',
@@ -405,14 +405,26 @@ function parseSubagentTranscript(subId, meta) {
       durationSec = Math.max(0, Math.round((new Date(endTime).getTime() - new Date(startTime).getTime()) / 1000));
     }
 
-    // Gemini weight: 1*in + 3*out + 0.05*cache  (calibrated denom=280000)
-    const costWeight = subIn + (3.0 * subOut) + (0.05 * subCache);
-    const consumed5h = costWeight / 280000;
-    const consumedWeekly = consumed5h / 4.0;
-    // 3P (Claude/GPT) weight: 1*in + 5*out + 0.1*cache  (calibrated denom=138000; weekly=5h/2.0)
-    const cost3p = subIn + (5.0 * subOut) + (0.1 * subCache);
-    const consumed3p5h = cost3p / 138000;
-    const consumed3pWeekly = consumed3p5h / 2.0;
+    // Check model group of subagent
+    const subModelStr = String(meta?.Model || meta?.model || 'inherit').toLowerCase();
+    const is3pSub = subModelStr.includes('claude') || subModelStr.includes('gpt') || subModelStr.includes('sonnet') || subModelStr.includes('opus') || (subModelStr === 'inherit' && defaultGroup === '3p');
+
+    let consumed5h = 0;
+    let consumedWeekly = 0;
+    let consumed3p5h = 0;
+    let consumed3pWeekly = 0;
+
+    if (is3pSub) {
+      // 3P (Claude/GPT) weight: 1*in + 5*out + 0.1*cache  (calibrated denom=240000; weekly=5h/2.0)
+      const cost3p = subIn + (5.0 * subOut) + (0.1 * subCache);
+      consumed3p5h = cost3p / 240000;
+      consumed3pWeekly = consumed3p5h / 2.0;
+    } else {
+      // Gemini weight: 1*in + 3*out + 0.05*cache  (calibrated denom=280000; weekly=5h/4.0)
+      const costWeight = subIn + (3.0 * subOut) + (0.05 * subCache);
+      consumed5h = costWeight / 280000;
+      consumedWeekly = consumed5h / 4.0;
+    }
 
     return {
       conversationId: subId,
@@ -478,6 +490,7 @@ function parseTranscriptTurns(convId) {
     let currentTurn = null;
     let turnIndex = 0;
     const turns = [];
+    let currentModel = 'Gemini 3.8 Flash (High)';
 
     for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
       const line = lines[lineIndex];
@@ -490,8 +503,22 @@ function parseTranscriptTurns(convId) {
           userMessageCount++;
           const promptMeta = parsePromptMetadata(step.content);
 
+          const settingMatch = (step.content || '').match(/The user changed setting [`"'\s]*Model Selection[`"'\s]* from (?:.*?) to (.*?)\.\s*(?:No need to comment|$)/i);
+          if (settingMatch) {
+            currentModel = settingMatch[1].trim().replace(/^[`"']|[`"']$/g, '');
+          }
+          const modelGroup = (function(name) {
+            const low = (name || '').toLowerCase();
+            if (low.includes('claude') || low.includes('gpt') || low.includes('sonnet') || low.includes('opus')) {
+              return '3p';
+            }
+            return 'gemini';
+          })(currentModel);
+
           currentTurn = {
             turnIndex,
+            model: currentModel,
+            modelGroup,
             userPrompt: promptMeta.text || (step.content || '').slice(0, 80),
             isArtifactAction: promptMeta.isArtifactAction,
             artifactAction: promptMeta.artifactAction,
@@ -562,7 +589,7 @@ function parseTranscriptTurns(convId) {
                           const subId = ids[k];
                           if (!currentTurn.subagents.some(s => s.conversationId === subId)) {
                             const meta = subArray[k] || {};
-                            const subStats = parseSubagentTranscript(subId, meta);
+                            const subStats = parseSubagentTranscript(subId, meta, currentTurn.modelGroup);
                             currentTurn.subagents.push(subStats);
                           }
                         }
@@ -727,19 +754,29 @@ function calculateSessionAndTurnDeltas(convId, currentBuckets, transcriptStats) 
   // 1. Process all turns with deterministic token-based quota physics engine
   const turns = transcriptStats.turns || [];
   for (const t of turns) {
+    const is3pTurn = t.modelGroup === '3p';
+
     // Main agent cost weight
     const mainIn = t.mainTokens?.input || t.inputTokens || 0;
     const mainOut = t.mainTokens?.output || t.outputTokens || 0;
     const mainCache = t.mainTokens?.cache || t.cacheReadTokens || 0;
 
-    // Gemini weight: 1*in + 3*out + 0.05*cache  (calibrated denom=280000)
-    const mainCostWeight = mainIn + (3.0 * mainOut) + (0.05 * mainCache);
-    const mainConsumed5h = mainCostWeight / 280000;
-    const mainConsumedWeekly = mainConsumed5h / 4.0;
-    // 3P (Claude/GPT) weight: 1*in + 5*out + 0.1*cache  (calibrated denom=138000; weekly=5h/2.0)
-    const mainCost3p = mainIn + (5.0 * mainOut) + (0.1 * mainCache);
-    const mainConsumed3p5h = mainCost3p / 138000;
-    const mainConsumed3pWeekly = mainConsumed3p5h / 2.0;
+    let mainConsumed5h = 0;
+    let mainConsumedWeekly = 0;
+    let mainConsumed3p5h = 0;
+    let mainConsumed3pWeekly = 0;
+
+    if (is3pTurn) {
+      // 3P (Claude/GPT) weight: 1*in + 5*out + 0.1*cache  (calibrated denom=240000; weekly=5h/2.0)
+      const mainCost3p = mainIn + (5.0 * mainOut) + (0.1 * mainCache);
+      mainConsumed3p5h = mainCost3p / 240000;
+      mainConsumed3pWeekly = mainConsumed3p5h / 2.0;
+    } else {
+      // Gemini weight: 1*in + 3*out + 0.05*cache  (calibrated denom=280000; weekly=5h/4.0)
+      const mainCostWeight = mainIn + (3.0 * mainOut) + (0.05 * mainCache);
+      mainConsumed5h = mainCostWeight / 280000;
+      mainConsumedWeekly = mainConsumed5h / 4.0;
+    }
 
     // Subagents cost summation
     let subConsumed5h = 0;
@@ -805,6 +842,11 @@ function calculateSessionAndTurnDeltas(convId, currentBuckets, transcriptStats) 
   let sessionSubagentGemini5h = 0;
   let sessionSubagentGeminiWeekly = 0;
 
+  let sessionMain3p5h = 0;
+  let sessionMain3pWeekly = 0;
+  let sessionSubagent3p5h = 0;
+  let sessionSubagent3pWeekly = 0;
+
   for (const t of activeTurns) {
     sessionGemini5h += t.quota?.gemini?.consumed5h || 0;
     sessionGeminiWeekly += t.quota?.gemini?.consumedWeekly || 0;
@@ -815,6 +857,11 @@ function calculateSessionAndTurnDeltas(convId, currentBuckets, transcriptStats) 
     sessionMainGeminiWeekly += t.mainQuota?.gemini?.consumedWeekly || 0;
     sessionSubagentGemini5h += t.subagentQuota?.gemini?.consumed5h || 0;
     sessionSubagentGeminiWeekly += t.subagentQuota?.gemini?.consumedWeekly || 0;
+
+    sessionMain3p5h += t.mainQuota?.['3p']?.consumed5h || 0;
+    sessionMain3pWeekly += t.mainQuota?.['3p']?.consumedWeekly || 0;
+    sessionSubagent3p5h += t.subagentQuota?.['3p']?.consumed5h || 0;
+    sessionSubagent3pWeekly += t.subagentQuota?.['3p']?.consumedWeekly || 0;
   }
 
   // 3. Calculate session deltas & detect global bucket refresh/recovery
@@ -865,6 +912,10 @@ function calculateSessionAndTurnDeltas(convId, currentBuckets, transcriptStats) 
       mainGeminiWeekly: Math.round(sessionMainGeminiWeekly * 100) / 100,
       subagentGemini5h: Math.round(sessionSubagentGemini5h * 100) / 100,
       subagentGeminiWeekly: Math.round(sessionSubagentGeminiWeekly * 100) / 100,
+      main3p5h: Math.round(sessionMain3p5h * 100) / 100,
+      main3pWeekly: Math.round(sessionMain3pWeekly * 100) / 100,
+      subagent3p5h: Math.round(sessionSubagent3p5h * 100) / 100,
+      subagent3pWeekly: Math.round(sessionSubagent3pWeekly * 100) / 100,
       subagentCount: transcriptStats.subagentCount || 0
     },
     turns

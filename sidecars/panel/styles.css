@@ -433,6 +433,29 @@ body {
   color: var(--text-main);
 }
 
+.turn-model-badge {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1.2;
+}
+
+.turn-model-badge.model-gemini {
+  background: color-mix(in srgb, #3b82f6 12%, transparent);
+  color: #60a5fa;
+  border: 1px solid color-mix(in srgb, #3b82f6 25%, transparent);
+}
+
+.turn-model-badge.model-3p {
+  background: color-mix(in srgb, #a855f7 12%, transparent);
+  color: #c084fc;
+  border: 1px solid color-mix(in srgb, #a855f7 25%, transparent);
+}
+
 .turn-time-stamp {
   font-size: 11px;
   color: var(--text-muted);

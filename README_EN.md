@@ -82,6 +82,16 @@ Your weekly quota capacity is numerically equivalent to exactly **four 5-hour bu
 - **Granular Attributed Quota**: Applies calibrated physics formulas to calculate independent 5-hour and weekly quota for each individual subagent;
 - **Interactive Drawer UI**: Embeds collapsible subagent trays inside turn cards, alongside a main vs. subagent summary in the session card.
 
+### 5. Multi-Group Engine & Claude / GPT Group Notice
+Quota Lens supports real-time observation of both the **Gemini Models Group** and the **Claude & GPT Models Group**, automatically attributing token consumption based on the active model of each interaction.
+
+> [!WARNING]
+> **Important Notice on Accuracy for Claude & GPT Model Group Usage Detection**
+> 
+> - **Gemini Models Group**: Rigorously calibrated across hundreds of real turns against language server buckets; weighted token formulas (3x output, 0.05x cache read, 280,000 capacity denominator) provide high fidelity.
+> - **Claude & GPT Models Group**: Third-party models are calibrated against Claude official API pricing ratios (5x output weight, 0.1x cache read weight) with an empirical full-range stress test (94.7% consumption span), discovering an exact **2.0000 periodic rule** ($\frac{\Delta 5\text{h}}{\Delta \text{Weekly}} \equiv 2.0000$).
+> - **Accuracy Caveat**: Google backend third-party quota pools, account tiers (Pro subscribers, Google One AI Premium, Workspace enterprise), and asynchronous batching policies vary. **Figures for the Claude & GPT group serve as helpful trend and relative usage estimators; authoritative remaining allowances remain those reported by Google's official language server**.
+
 ---
 
 ## Installation & Quickstart
