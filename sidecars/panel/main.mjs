@@ -405,11 +405,14 @@ function parseSubagentTranscript(subId, meta) {
       durationSec = Math.max(0, Math.round((new Date(endTime).getTime() - new Date(startTime).getTime()) / 1000));
     }
 
+    // Gemini weight: 1*in + 3*out + 0.05*cache  (calibrated denom=280000)
     const costWeight = subIn + (3.0 * subOut) + (0.05 * subCache);
     const consumed5h = costWeight / 280000;
     const consumedWeekly = consumed5h / 4.0;
-    const consumed3p5h = costWeight / 140000;
-    const consumed3pWeekly = consumed3p5h / 4.0;
+    // 3P (Claude/GPT) weight: 1*in + 5*out + 0.1*cache  (calibrated denom=138000; weekly=5h/2.0)
+    const cost3p = subIn + (5.0 * subOut) + (0.1 * subCache);
+    const consumed3p5h = cost3p / 138000;
+    const consumed3pWeekly = consumed3p5h / 2.0;
 
     return {
       conversationId: subId,
@@ -729,11 +732,14 @@ function calculateSessionAndTurnDeltas(convId, currentBuckets, transcriptStats) 
     const mainOut = t.mainTokens?.output || t.outputTokens || 0;
     const mainCache = t.mainTokens?.cache || t.cacheReadTokens || 0;
 
+    // Gemini weight: 1*in + 3*out + 0.05*cache  (calibrated denom=280000)
     const mainCostWeight = mainIn + (3.0 * mainOut) + (0.05 * mainCache);
     const mainConsumed5h = mainCostWeight / 280000;
     const mainConsumedWeekly = mainConsumed5h / 4.0;
-    const mainConsumed3p5h = mainCostWeight / 140000;
-    const mainConsumed3pWeekly = mainConsumed3p5h / 4.0;
+    // 3P (Claude/GPT) weight: 1*in + 5*out + 0.1*cache  (calibrated denom=138000; weekly=5h/2.0)
+    const mainCost3p = mainIn + (5.0 * mainOut) + (0.1 * mainCache);
+    const mainConsumed3p5h = mainCost3p / 138000;
+    const mainConsumed3pWeekly = mainConsumed3p5h / 2.0;
 
     // Subagents cost summation
     let subConsumed5h = 0;
