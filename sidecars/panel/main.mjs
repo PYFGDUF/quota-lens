@@ -232,6 +232,160 @@ function getConversationTitle(convId) {
   return `会话 ${convId.slice(0, 8)}`;
 }
 
+function getStepFromFullTranscriptSync(convId, lineIndex) {
+  try {
+    const p = join(BRAIN_DIR, convId, '.system_generated', 'logs', 'transcript_full.jsonl');
+    if (!existsSync(p)) return null;
+    const content = readFileSync(p, 'utf8');
+    const lines = content.split('\n');
+    if (lines[lineIndex]) {
+      return JSON.parse(lines[lineIndex]);
+    }
+  } catch {}
+  return null;
+}
+
+function parseSubagentMetaFromArgs(rawArgs, fullStep) {
+  if (fullStep && Array.isArray(fullStep.tool_calls)) {
+    const fullTc = fullStep.tool_calls.find(t => t.name === 'invoke_subagent');
+    if (fullTc?.args?.Subagents && Array.isArray(fullTc.args.Subagents)) {
+      return fullTc.args.Subagents;
+    }
+  }
+
+  if (Array.isArray(rawArgs)) return rawArgs;
+  if (Array.isArray(rawArgs?.Subagents)) return rawArgs.Subagents;
+  if (Array.isArray(rawArgs?.subagents)) return rawArgs.subagents;
+
+  let str = '';
+  if (typeof rawArgs === 'string') str = rawArgs;
+  else if (typeof rawArgs?.Subagents === 'string') str = rawArgs.Subagents;
+  else if (typeof rawArgs?.subagents === 'string') str = rawArgs.subagents;
+
+  if (str) {
+    try {
+      const parsed = JSON.parse(str);
+      if (Array.isArray(parsed)) return parsed;
+      if (parsed && typeof parsed === 'object') return [parsed];
+    } catch {}
+
+    try {
+      const sanitized = str.replace(/[\u0000-\u001f]/g, (ch) => {
+        if (ch === '\n') return '\\n';
+        if (ch === '\r') return '\\r';
+        if (ch === '\t') return '\\t';
+        return '';
+      });
+      const parsed = JSON.parse(sanitized);
+      if (Array.isArray(parsed)) return parsed;
+      if (parsed && typeof parsed === 'object') return [parsed];
+    } catch {}
+
+    const results = [];
+    const roleMatches = [...str.matchAll(/["']Role["']\s*:\s*["']([^"']+)["']/g)];
+    const typeMatches = [...str.matchAll(/["']TypeName["']\s*:\s*["']([^"']+)["']/g)];
+    const modelMatches = [...str.matchAll(/["']Model["']\s*:\s*["']([^"']+)["']/g)];
+    const count = Math.max(roleMatches.length, typeMatches.length, 1);
+    for (let i = 0; i < count; i++) {
+      results.push({
+        Role: roleMatches[i]?.[1] || 'Subagent',
+        TypeName: typeMatches[i]?.[1] || 'subagent',
+        Model: modelMatches[i]?.[1] || 'inherit'
+      });
+    }
+    return results;
+  }
+  return [];
+}
+
+function parseSubagentTranscript(subId, meta) {
+  const defaultRes = {
+    conversationId: subId,
+    role: meta?.Role || meta?.role || meta?.TypeName || meta?.typeName || 'Subagent',
+    typeName: meta?.TypeName || meta?.typeName || 'subagent',
+    model: meta?.Model || meta?.model || 'inherit',
+    promptSnippet: (meta?.Prompt || meta?.prompt || '').slice(0, 100),
+    totalTokens: 0,
+    inputTokens: 0,
+    outputTokens: 0,
+    cacheReadTokens: 0,
+    stepCount: 0,
+    durationSec: 0,
+    quota: {
+      gemini: { consumed5h: 0, consumedWeekly: 0 },
+      '3p': { consumed5h: 0, consumedWeekly: 0 }
+    }
+  };
+
+  const p = join(BRAIN_DIR, subId, '.system_generated', 'logs', 'transcript.jsonl');
+  if (!existsSync(p)) return defaultRes;
+
+  try {
+    const content = readFileSync(p, 'utf8');
+    const lines = content.split('\n');
+    let subIn = 0;
+    let subCache = 0;
+    let subOut = 0;
+    let startTime = null;
+    let endTime = null;
+    let stepCount = 0;
+
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      stepCount++;
+      try {
+        const step = JSON.parse(line);
+        if (step.created_at) {
+          if (!startTime) startTime = step.created_at;
+          endTime = step.created_at;
+        }
+        if (step.type === 'PLANNER_RESPONSE') {
+          subIn += Number(step.input_tokens) || 0;
+          subCache += Number(step.cache_read_tokens) || 0;
+          subOut += Number(step.output_tokens) || 0;
+        }
+      } catch {}
+    }
+
+    let durationSec = 0;
+    if (startTime && endTime) {
+      durationSec = Math.max(0, Math.round((new Date(endTime).getTime() - new Date(startTime).getTime()) / 1000));
+    }
+
+    const costWeight = subIn + (3.0 * subOut) + (0.05 * subCache);
+    const consumed5h = costWeight / 280000;
+    const consumedWeekly = consumed5h / 4.0;
+    const consumed3p5h = costWeight / 140000;
+    const consumed3pWeekly = consumed3p5h / 4.0;
+
+    return {
+      conversationId: subId,
+      role: meta?.Role || meta?.role || meta?.TypeName || meta?.typeName || 'Subagent',
+      typeName: meta?.TypeName || meta?.typeName || 'subagent',
+      model: meta?.Model || meta?.model || 'inherit',
+      promptSnippet: (meta?.Prompt || meta?.prompt || '').slice(0, 100),
+      totalTokens: subIn + subOut,
+      inputTokens: subIn,
+      outputTokens: subOut,
+      cacheReadTokens: subCache,
+      stepCount,
+      durationSec,
+      quota: {
+        gemini: {
+          consumed5h: Math.round(consumed5h * 100) / 100,
+          consumedWeekly: Math.round(consumedWeekly * 100) / 100
+        },
+        '3p': {
+          consumed5h: Math.round(consumed3p5h * 100) / 100,
+          consumedWeekly: Math.round(consumed3pWeekly * 100) / 100
+        }
+      }
+    };
+  } catch {
+    return defaultRes;
+  }
+}
+
 // Parses transcript.jsonl into overall metrics and individual turns
 function parseTranscriptTurns(convId) {
   const p = join(BRAIN_DIR, convId, '.system_generated', 'logs', 'transcript.jsonl');
@@ -245,6 +399,9 @@ function parseTranscriptTurns(convId) {
       totalOutputTokens: 0,
       totalPromptTokens: 0,
       totalTokensOverall: 0,
+      mainTokensOverall: 0,
+      subagentTokensOverall: 0,
+      subagentCount: 0,
       cacheHitRatio: 0,
       tools: {},
       turns: []
@@ -266,7 +423,8 @@ function parseTranscriptTurns(convId) {
     let turnIndex = 0;
     const turns = [];
 
-    for (const line of lines) {
+    for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+      const line = lines[lineIndex];
       if (!line.trim()) continue;
       try {
         const step = JSON.parse(line);
@@ -287,7 +445,8 @@ function parseTranscriptTurns(convId) {
             totalTokens: 0,
             stepCount: 1,
             plannerCount: 0,
-            tools: {}
+            tools: {},
+            subagents: []
           };
           turns.push(currentTurn);
         } else if (currentTurn) {
@@ -317,6 +476,40 @@ function parseTranscriptTurns(convId) {
                 const name = tc.name || 'unknown';
                 globalTools[name] = (globalTools[name] || 0) + 1;
                 currentTurn.tools[name] = (currentTurn.tools[name] || 0) + 1;
+
+                if (name === 'invoke_subagent') {
+                  let fullStep = null;
+                  if (Array.isArray(step.truncated_fields) && step.truncated_fields.includes('tool_calls')) {
+                    fullStep = getStepFromFullTranscriptSync(convId, lineIndex);
+                  }
+                  let rawArgs = tc.args || {};
+                  if (typeof rawArgs === 'string') {
+                    try { rawArgs = JSON.parse(rawArgs); } catch {}
+                  }
+                  if (tc.argumentsJson && !tc.args) {
+                    try { rawArgs = JSON.parse(tc.argumentsJson); } catch {}
+                  }
+                  const subArray = parseSubagentMetaFromArgs(rawArgs, fullStep);
+
+                  // Look ahead in subsequent steps for subagent creation result
+                  for (let j = lineIndex + 1; j < Math.min(lines.length, lineIndex + 8); j++) {
+                    if (!lines[j]?.trim()) continue;
+                    try {
+                      const nextStep = JSON.parse(lines[j]);
+                      if (nextStep.type === 'GENERIC' && nextStep.content && nextStep.content.includes('Created the following subagents')) {
+                        const ids = [...nextStep.content.matchAll(/["']conversationId["']\s*:\s*["']([a-f0-9\-]+)["']/g)].map(m => m[1]);
+                        for (let k = 0; k < ids.length; k++) {
+                          const subId = ids[k];
+                          if (!currentTurn.subagents.some(s => s.conversationId === subId)) {
+                            const meta = subArray[k] || {};
+                            const subStats = parseSubagentTranscript(subId, meta);
+                            currentTurn.subagents.push(subStats);
+                          }
+                        }
+                      }
+                    } catch {}
+                  }
+                }
               }
             }
           }
@@ -324,11 +517,48 @@ function parseTranscriptTurns(convId) {
       } catch {}
     }
 
-    // Process turn statistics
+    // Process turn statistics & subagent breakdown
+    let allSubagentsCount = 0;
+    let totalSubInput = 0;
+    let totalSubOutput = 0;
+    let totalSubCache = 0;
+
     for (const t of turns) {
-      t.totalTokens = t.inputTokens + t.outputTokens;
-      const promptTot = t.inputTokens + t.cacheReadTokens;
-      t.cacheHitRatio = promptTot > 0 ? Math.round((t.cacheReadTokens / promptTot) * 1000) / 10 : 0;
+      let subIn = 0;
+      let subOut = 0;
+      let subCache = 0;
+
+      if (Array.isArray(t.subagents)) {
+        for (const sub of t.subagents) {
+          subIn += sub.inputTokens || 0;
+          subOut += sub.outputTokens || 0;
+          subCache += sub.cacheReadTokens || 0;
+          allSubagentsCount++;
+        }
+      }
+
+      totalSubInput += subIn;
+      totalSubOutput += subOut;
+      totalSubCache += subCache;
+
+      t.mainTokens = {
+        input: t.inputTokens,
+        output: t.outputTokens,
+        cache: t.cacheReadTokens,
+        total: t.inputTokens + t.outputTokens
+      };
+
+      t.subagentTokens = {
+        input: subIn,
+        output: subOut,
+        cache: subCache,
+        total: subIn + subOut
+      };
+
+      t.totalTokens = t.mainTokens.total + t.subagentTokens.total;
+      const promptTot = t.mainTokens.input + t.mainTokens.cache + subIn + subCache;
+      const totalCacheRead = t.mainTokens.cache + subCache;
+      t.cacheHitRatio = promptTot > 0 ? Math.round((totalCacheRead / promptTot) * 1000) / 10 : 0;
 
       if (t.startTime && t.endTime) {
         const diffMs = new Date(t.endTime).getTime() - new Date(t.startTime).getTime();
@@ -336,25 +566,27 @@ function parseTranscriptTurns(convId) {
       } else {
         t.durationSec = 0;
       }
-
-      // Compute turn cost weight for quota distribution:
-      // Output tokens cost ~3-4x input, Cache read tokens cost ~0.05x input
-      t.costWeight = t.inputTokens + (3.0 * t.outputTokens) + (0.05 * t.cacheReadTokens);
     }
 
-    const totalPrompt = totalInput + totalCache;
-    const totalTokens = totalPrompt + totalOutput;
-    const cacheHitRatio = totalPrompt > 0 ? (totalCache / totalPrompt) * 100 : 0;
+    const combinedInput = totalInput + totalSubInput;
+    const combinedCache = totalCache + totalSubCache;
+    const combinedOutput = totalOutput + totalSubOutput;
+    const combinedPrompt = combinedInput + combinedCache;
+    const totalTokensOverall = combinedPrompt + combinedOutput;
+    const cacheHitRatio = combinedPrompt > 0 ? (combinedCache / combinedPrompt) * 100 : 0;
 
     return {
       stepCount: lines.length,
       userMessageCount,
       plannerCount,
-      totalInputTokens: totalInput,
-      totalCacheReadTokens: totalCache,
-      totalOutputTokens: totalOutput,
-      totalPromptTokens: totalPrompt,
-      totalTokensOverall: totalTokens,
+      totalInputTokens: combinedInput,
+      totalCacheReadTokens: combinedCache,
+      totalOutputTokens: combinedOutput,
+      totalPromptTokens: combinedPrompt,
+      totalTokensOverall,
+      mainTokensOverall: (totalInput + totalCache) + totalOutput,
+      subagentTokensOverall: (totalSubInput + totalSubCache) + totalSubOutput,
+      subagentCount: allSubagentsCount,
       cacheHitRatio: Math.round(cacheHitRatio * 10) / 10,
       tools: globalTools,
       turns
@@ -369,6 +601,9 @@ function parseTranscriptTurns(convId) {
       totalOutputTokens: 0,
       totalPromptTokens: 0,
       totalTokensOverall: 0,
+      mainTokensOverall: 0,
+      subagentTokensOverall: 0,
+      subagentCount: 0,
       cacheHitRatio: 0,
       tools: {},
       turns: []
@@ -432,32 +667,62 @@ function calculateSessionAndTurnDeltas(convId, currentBuckets, transcriptStats) 
   // 1. Process all turns with deterministic token-based quota physics engine
   const turns = transcriptStats.turns || [];
   for (const t of turns) {
-    // Input tokens: base weight 1.0
-    // Output tokens: base weight 3.0
-    // Cache read tokens: cached discount weight 0.10
-    const costWeight = (t.inputTokens || 0) + 
-                       (3.0 * (t.outputTokens || 0)) + 
-                       (0.05 * (t.cacheReadTokens || 0));
+    // Main agent cost weight
+    const mainIn = t.mainTokens?.input || t.inputTokens || 0;
+    const mainOut = t.mainTokens?.output || t.outputTokens || 0;
+    const mainCache = t.mainTokens?.cache || t.cacheReadTokens || 0;
 
-    // Capacity calibration based on empirical Antigravity telemetry:
-    // Real 5-hour quota capacity: ~28,000,000 weighted token units (280,000 units per 1%)
-    // Real Weekly quota capacity: ~112,000,000 weighted token units (1,120,000 units per 1%)
-    // Strict periodic ratio: 5h / Weekly == 4.0000
-    const consumed5h = costWeight / 280000;
-    const consumedWeekly = consumed5h / 4.0;
+    const mainCostWeight = mainIn + (3.0 * mainOut) + (0.05 * mainCache);
+    const mainConsumed5h = mainCostWeight / 280000;
+    const mainConsumedWeekly = mainConsumed5h / 4.0;
+    const mainConsumed3p5h = mainCostWeight / 140000;
+    const mainConsumed3pWeekly = mainConsumed3p5h / 4.0;
 
-    // 3P models (Claude 3.7 Sonnet / Opus) bucket capacity: ~14,000,000 units
-    const consumed3p5h = costWeight / 140000;
-    const consumed3pWeekly = consumed3p5h / 4.0;
+    // Subagents cost summation
+    let subConsumed5h = 0;
+    let subConsumedWeekly = 0;
+    let subConsumed3p5h = 0;
+    let subConsumed3pWeekly = 0;
+
+    if (Array.isArray(t.subagents)) {
+      for (const sub of t.subagents) {
+        subConsumed5h += sub.quota?.gemini?.consumed5h || 0;
+        subConsumedWeekly += sub.quota?.gemini?.consumedWeekly || 0;
+        subConsumed3p5h += sub.quota?.['3p']?.consumed5h || 0;
+        subConsumed3pWeekly += sub.quota?.['3p']?.consumedWeekly || 0;
+      }
+    }
+
+    t.mainQuota = {
+      gemini: {
+        consumed5h: Math.round(mainConsumed5h * 100) / 100,
+        consumedWeekly: Math.round(mainConsumedWeekly * 100) / 100
+      },
+      '3p': {
+        consumed5h: Math.round(mainConsumed3p5h * 100) / 100,
+        consumedWeekly: Math.round(mainConsumed3pWeekly * 100) / 100
+      }
+    };
+
+    t.subagentQuota = {
+      gemini: {
+        consumed5h: Math.round(subConsumed5h * 100) / 100,
+        consumedWeekly: Math.round(subConsumedWeekly * 100) / 100
+      },
+      '3p': {
+        consumed5h: Math.round(subConsumed3p5h * 100) / 100,
+        consumedWeekly: Math.round(subConsumed3pWeekly * 100) / 100
+      }
+    };
 
     t.quota = {
       gemini: {
-        consumed5h: Math.round(consumed5h * 100) / 100,
-        consumedWeekly: Math.round(consumedWeekly * 100) / 100
+        consumed5h: Math.round((mainConsumed5h + subConsumed5h) * 100) / 100,
+        consumedWeekly: Math.round((mainConsumedWeekly + subConsumedWeekly) * 100) / 100
       },
       '3p': {
-        consumed5h: Math.round(consumed3p5h * 100) / 100,
-        consumedWeekly: Math.round(consumed3pWeekly * 100) / 100
+        consumed5h: Math.round((mainConsumed3p5h + subConsumed3p5h) * 100) / 100,
+        consumedWeekly: Math.round((mainConsumed3pWeekly + subConsumed3pWeekly) * 100) / 100
       }
     };
   }
@@ -472,11 +737,21 @@ function calculateSessionAndTurnDeltas(convId, currentBuckets, transcriptStats) 
   let session3p5h = 0;
   let session3pWeekly = 0;
 
+  let sessionMainGemini5h = 0;
+  let sessionMainGeminiWeekly = 0;
+  let sessionSubagentGemini5h = 0;
+  let sessionSubagentGeminiWeekly = 0;
+
   for (const t of activeTurns) {
     sessionGemini5h += t.quota?.gemini?.consumed5h || 0;
     sessionGeminiWeekly += t.quota?.gemini?.consumedWeekly || 0;
     session3p5h += t.quota?.['3p']?.consumed5h || 0;
     session3pWeekly += t.quota?.['3p']?.consumedWeekly || 0;
+
+    sessionMainGemini5h += t.mainQuota?.gemini?.consumed5h || 0;
+    sessionMainGeminiWeekly += t.mainQuota?.gemini?.consumedWeekly || 0;
+    sessionSubagentGemini5h += t.subagentQuota?.gemini?.consumed5h || 0;
+    sessionSubagentGeminiWeekly += t.subagentQuota?.gemini?.consumedWeekly || 0;
   }
 
   // 3. Calculate session deltas & detect global bucket refresh/recovery
@@ -522,6 +797,13 @@ function calculateSessionAndTurnDeltas(convId, currentBuckets, transcriptStats) 
     baselineTime: session.baselineTime,
     baselineTurnIndex: session.baselineTurnIndex || 0,
     sessionDeltas,
+    sessionBreakdown: {
+      mainGemini5h: Math.round(sessionMainGemini5h * 100) / 100,
+      mainGeminiWeekly: Math.round(sessionMainGeminiWeekly * 100) / 100,
+      subagentGemini5h: Math.round(sessionSubagentGemini5h * 100) / 100,
+      subagentGeminiWeekly: Math.round(sessionSubagentGeminiWeekly * 100) / 100,
+      subagentCount: transcriptStats.subagentCount || 0
+    },
     turns
   };
 }
@@ -553,7 +835,8 @@ app.api('/api/quota-summary', async (data) => {
     currentBuckets,
     session: {
       baselineTime: sessionAnalysis.baselineTime,
-      deltas: sessionAnalysis.sessionDeltas
+      deltas: sessionAnalysis.sessionDeltas,
+      breakdown: sessionAnalysis.sessionBreakdown
     },
     metrics: {
       ...transcriptStats,

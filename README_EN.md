@@ -76,6 +76,12 @@ Empirically verified across multiple production turns:
 $$\frac{\Delta 5\text{h}}{\Delta \text{Weekly}} \equiv 4.0000$$
 Your weekly quota capacity is numerically equivalent to exactly **four 5-hour burst refresh windows**.
 
+### 4. Subagent Deep Tracking & Collapsible Drawer
+- **Parent-Child Correlation**: Automatically detects turns that spawn subagents (`invoke_subagent`), pairing them with respective `conversationId` and role configurations;
+- **Independent Log Parsing**: Traverses subagent logs to inspect Role, Model, Step count, Duration, and Tokens (Input / Output / Cache);
+- **Granular Attributed Quota**: Applies calibrated physics formulas to calculate independent 5-hour and weekly quota for each individual subagent;
+- **Interactive Drawer UI**: Embeds collapsible subagent trays inside turn cards, alongside a main vs. subagent summary in the session card.
+
 ---
 
 ## Installation & Quickstart

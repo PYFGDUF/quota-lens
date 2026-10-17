@@ -45,6 +45,12 @@
       'turns.textReply': '纯文字回复',
       'turns.toolTypes': '{n} 类工具',
       'turns.tokenDetail': 'Token: <b>{tot}</b> (入: {in}, 产: {out})',
+      'turns.tokenDetailWithSub': 'Token: <b>{tot}</b> (主: {main}, 子: {sub})',
+      'subagents.label': '子代理',
+      'subagents.count': '{n} 个子代理',
+      'subagents.toggleView': '展开 {n} 个子代理明细',
+      'subagents.toggleHide': '收起子代理明细',
+      'subagents.sessionSubStat': '子代理 ({n} 个) 消耗: 5h -{h5}% | 周 -{wk}%',
       'session.title': '本次会话累计总消耗',
       'session.totalBadge': '5h: -{h5}% | 周: -{wk}%',
       'session.5hLabel': '5 小时总计消耗',
@@ -107,6 +113,12 @@
       'turns.textReply': 'Text response',
       'turns.toolTypes': '{n} tool types',
       'turns.tokenDetail': 'Tokens: <b>{tot}</b> (In: {in}, Out: {out})',
+      'turns.tokenDetailWithSub': 'Tokens: <b>{tot}</b> (Main: {main}, Sub: {sub})',
+      'subagents.label': 'Subagents',
+      'subagents.count': '{n} subagents',
+      'subagents.toggleView': 'View {n} subagents',
+      'subagents.toggleHide': 'Hide details',
+      'subagents.sessionSubStat': 'Subagents ({n}) usage: 5h -{h5}% | Wk -{wk}%',
       'session.title': 'Session Cumulative Total',
       'session.totalBadge': '5h: -{h5}% | Wk: -{wk}%',
       'session.5hLabel': '5-Hour Total Consumed',
@@ -418,7 +430,28 @@
     sessionOutputTokens.textContent = t('session.outTokens', { n: formatNumber(m.totalOutputTokens || 0) });
     sessionCacheRatio.textContent = t('session.cacheRatio', { pct: m.cacheHitRatio || 0 });
 
-    // 7. Render Global Health & Countdowns
+    // 7. Render Session Subagents Breakdown
+    const sessionSubagentBar = document.getElementById('session-subagent-bar');
+    const sessionSubagentCountText = document.getElementById('session-subagent-count-text');
+    const sessionSubagentUsageText = document.getElementById('session-subagent-usage-text');
+    if (sessionSubagentBar) {
+      const bd = data.session?.breakdown;
+      if (bd && bd.subagentCount > 0) {
+        sessionSubagentBar.style.display = 'flex';
+        sessionSubagentCountText.textContent = t('subagents.count', { n: bd.subagentCount });
+        const h5 = activeGroup === 'gemini' ? bd.subagentGemini5h : bd.subagentGemini5h * 2;
+        const wk = activeGroup === 'gemini' ? bd.subagentGeminiWeekly : bd.subagentGeminiWeekly * 2;
+        sessionSubagentUsageText.textContent = t('subagents.sessionSubStat', {
+          n: bd.subagentCount,
+          h5: (h5 || 0).toFixed(2),
+          wk: (wk || 0).toFixed(2)
+        });
+      } else {
+        sessionSubagentBar.style.display = 'none';
+      }
+    }
+
+    // 8. Render Global Health & Countdowns
     const current5h = data.currentBuckets?.[bucket5hKey];
     const currentWeekly = data.currentBuckets?.[bucketWeeklyKey];
 
@@ -472,11 +505,70 @@
         ? toolEntries.map(([k, v]) => `${k} x${v}`).join(', ')
         : t('turns.textReply');
 
-      const tokenDetail = t('turns.tokenDetail', {
-        tot: formatNumber(tItem.totalTokens),
-        in: formatNumber(tItem.inputTokens),
-        out: formatNumber(tItem.outputTokens)
-      });
+      const hasSubagents = Array.isArray(tItem.subagents) && tItem.subagents.length > 0;
+      const subCount = hasSubagents ? tItem.subagents.length : 0;
+
+      let tokenDetail = '';
+      if (hasSubagents) {
+        tokenDetail = t('turns.tokenDetailWithSub', {
+          tot: formatNumber(tItem.totalTokens),
+          main: formatNumber(tItem.mainTokens?.total || 0),
+          sub: formatNumber(tItem.subagentTokens?.total || 0)
+        });
+      } else {
+        tokenDetail = t('turns.tokenDetail', {
+          tot: formatNumber(tItem.totalTokens),
+          in: formatNumber(tItem.inputTokens),
+          out: formatNumber(tItem.outputTokens)
+        });
+      }
+
+      let subagentsHtml = '';
+      if (hasSubagents) {
+        const subItemsHtml = tItem.subagents.map((sub, idx) => {
+          const subQ = sub.quota?.[activeGroup] || { consumed5h: 0, consumedWeekly: 0 };
+          return `
+            <div class="subagent-card-item">
+              <div class="subagent-item-top">
+                <span class="subagent-role-name">
+                  <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor">
+                    <circle cx="12" cy="12" r="5"/>
+                  </svg>
+                  ${escapeHtml(sub.role)}
+                </span>
+                <span class="subagent-model-tag">${escapeHtml(sub.typeName || sub.model || 'subagent')}</span>
+              </div>
+              <div class="subagent-metrics-row">
+                <span>Token: ${formatNumber(sub.totalTokens)} (${sub.stepCount}步${sub.durationSec ? ` · ${sub.durationSec}s` : ''})</span>
+                <span class="subagent-quota-val">5h: -${subQ.consumed5h.toFixed(2)}% | 周: -${subQ.consumedWeekly.toFixed(2)}%</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        subagentsHtml = `
+          <div class="turn-subagent-row">
+            <span class="turn-subagent-summary">
+              <svg class="subagent-icon-mini" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <line x1="19" y1="8" x2="19" y2="14"/>
+                <line x1="22" y1="11" x2="16" y2="11"/>
+              </svg>
+              <span>${t('subagents.count', { n: subCount })} · ${formatNumber(tItem.subagentTokens?.total || 0)} Tokens</span>
+            </span>
+            <button class="turn-subagent-toggle" data-target="drawer-turn-${tItem.turnIndex}">
+              <span class="subagent-toggle-text">${t('subagents.toggleView', { n: subCount })}</span>
+              <svg class="subagent-chevron-icon" viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+          </div>
+          <div class="subagent-drawer" id="drawer-turn-${tItem.turnIndex}" style="display: none;">
+            ${subItemsHtml}
+          </div>
+        `;
+      }
 
       card.innerHTML = `
         <div class="turn-card-top">
@@ -486,6 +578,7 @@
         <div class="turn-prompt-snippet">
           ${tItem.userPrompt ? `“${escapeHtml(tItem.userPrompt)}”` : `<i>${t('latest.systemInput')}</i>`}
         </div>
+        ${subagentsHtml}
         <div class="turn-quota-pills">
           <div class="quota-pill pill-5h">
             <span>${t('quota.5hLabel')}:</span>
@@ -578,6 +671,31 @@
     }
     if (cachedData) renderTurnsList(cachedData.turns || []);
   });
+
+  if (turnsList) {
+    turnsList.addEventListener('click', (e) => {
+      const toggleBtn = e.target.closest('.turn-subagent-toggle');
+      if (!toggleBtn) return;
+      const targetId = toggleBtn.dataset.target;
+      if (!targetId) return;
+      const drawer = document.getElementById(targetId);
+      if (!drawer) return;
+
+      const isHidden = drawer.style.display === 'none';
+      drawer.style.display = isHidden ? 'flex' : 'none';
+      toggleBtn.classList.toggle('expanded', isHidden);
+
+      const labelSpan = toggleBtn.querySelector('.subagent-toggle-text');
+      if (labelSpan) {
+        if (isHidden) {
+          labelSpan.textContent = t('subagents.toggleHide');
+        } else {
+          const count = drawer.querySelectorAll('.subagent-card-item').length;
+          labelSpan.textContent = t('subagents.toggleView', { n: count });
+        }
+      }
+    });
+  }
 
   // ---------------------------------------------------------------------------
   // Initialization
