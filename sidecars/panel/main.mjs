@@ -188,6 +188,59 @@ function cleanPromptText(raw) {
     .trim();
 }
 
+function parsePromptMetadata(raw) {
+  if (!raw || typeof raw !== 'string') {
+    return {
+      text: '',
+      isArtifactAction: false,
+      artifactAction: null,
+      artifactName: null,
+      userComment: null
+    };
+  }
+
+  const cleaned = cleanPromptText(raw);
+
+  // Match: Comments on artifact URI: file:///.../xxx.md
+  const artifactMatch = raw.match(/Comments on artifact URI:\s*(?:file:\/\/[^\s\n]+[\\/]([^\s\n\/\\]+))/i);
+
+  if (artifactMatch) {
+    const artifactName = artifactMatch[1];
+    let action = 'feedback';
+    if (/The user has approved this document/i.test(raw)) {
+      action = 'approved';
+    } else if (/The user declined this document/i.test(raw)) {
+      action = 'declined';
+    }
+
+    // Extract any user comment outside of the boilerplate system text
+    let userComment = cleaned
+      .replace(/Comments on artifact URI:\s*file:\/\/[^\s]+/gi, '')
+      .replace(/The user has approved this document\.?/gi, '')
+      .replace(/The user declined this document\.?/gi, '')
+      .trim();
+
+    const actionText = action === 'approved' ? '已批准计划' : (action === 'declined' ? '已驳回计划' : '工件反馈');
+    const fallbackText = `[${actionText}] ${artifactName}${userComment ? ` (${userComment})` : ''}`;
+
+    return {
+      text: fallbackText,
+      isArtifactAction: true,
+      artifactAction: action,
+      artifactName,
+      userComment: userComment || null
+    };
+  }
+
+  return {
+    text: cleaned,
+    isArtifactAction: false,
+    artifactAction: null,
+    artifactName: null,
+    userComment: null
+  };
+}
+
 function getConversationTitle(convId) {
   try {
     const dbPath = join(APP_DATA_DIR, 'conversation_summaries.db');
@@ -432,11 +485,15 @@ function parseTranscriptTurns(convId) {
         if (step.type === 'USER_INPUT') {
           turnIndex++;
           userMessageCount++;
-          const prompt = cleanPromptText(step.content) || (step.content || '').slice(0, 80);
+          const promptMeta = parsePromptMetadata(step.content);
 
           currentTurn = {
             turnIndex,
-            userPrompt: prompt,
+            userPrompt: promptMeta.text || (step.content || '').slice(0, 80),
+            isArtifactAction: promptMeta.isArtifactAction,
+            artifactAction: promptMeta.artifactAction,
+            artifactName: promptMeta.artifactName,
+            userComment: promptMeta.userComment,
             startTime: step.created_at,
             endTime: step.created_at,
             inputTokens: 0,

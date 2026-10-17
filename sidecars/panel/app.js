@@ -51,6 +51,10 @@
       'subagents.toggleView': '展开 {n} 个子代理明细',
       'subagents.toggleHide': '收起子代理明细',
       'subagents.sessionSubStat': '子代理 ({n} 个) 消耗: 5h -{h5}% | 周 -{wk}%',
+      'approval.approved': '已批准计划',
+      'approval.declined': '已驳回计划',
+      'approval.feedback': '工件反馈',
+      'approval.commentPrefix': '附言',
       'session.title': '本次会话累计总消耗',
       'session.totalBadge': '5h: -{h5}% | 周: -{wk}%',
       'session.5hLabel': '5 小时总计消耗',
@@ -119,6 +123,10 @@
       'subagents.toggleView': 'View {n} subagents',
       'subagents.toggleHide': 'Hide details',
       'subagents.sessionSubStat': 'Subagents ({n}) usage: 5h -{h5}% | Wk -{wk}%',
+      'approval.approved': 'Plan Approved',
+      'approval.declined': 'Plan Declined',
+      'approval.feedback': 'Artifact Feedback',
+      'approval.commentPrefix': 'Note',
       'session.title': 'Session Cumulative Total',
       'session.totalBadge': '5h: -{h5}% | Wk: -{wk}%',
       'session.5hLabel': '5-Hour Total Consumed',
@@ -378,7 +386,7 @@
     if (latest) {
       latestTurnChip.textContent = t('latest.turnChip', { n: latest.turnIndex });
       latestTurnTime.textContent = formatTime(latest.startTime);
-      latestPromptQuote.textContent = latest.userPrompt ? `“${latest.userPrompt}”` : t('latest.systemInput');
+      latestPromptQuote.innerHTML = renderTurnPromptHtml(latest);
 
       const q = latest.quota?.[activeGroup] || { consumed5h: 0, consumedWeekly: 0 };
       latestTurn5h.textContent = `-${q.consumed5h.toFixed(2)}%`;
@@ -576,7 +584,7 @@
           <span class="turn-time-stamp">${formatTime(tItem.startTime)} (${tItem.durationSec || 0}s)</span>
         </div>
         <div class="turn-prompt-snippet">
-          ${tItem.userPrompt ? `“${escapeHtml(tItem.userPrompt)}”` : `<i>${t('latest.systemInput')}</i>`}
+          ${renderTurnPromptHtml(tItem)}
         </div>
         ${subagentsHtml}
         <div class="turn-quota-pills">
@@ -607,6 +615,65 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
+  }
+
+  function renderTurnPromptHtml(tItem) {
+    if (!tItem) return `<i>${t('latest.systemInput')}</i>`;
+
+    if (tItem.isArtifactAction && tItem.artifactName) {
+      const action = tItem.artifactAction || 'approved';
+      let iconSvg = '';
+      let actionLabel = '';
+
+      if (action === 'approved') {
+        actionLabel = t('approval.approved');
+        iconSvg = `
+          <svg class="artifact-action-svg" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        `;
+      } else if (action === 'declined') {
+        actionLabel = t('approval.declined');
+        iconSvg = `
+          <svg class="artifact-action-svg" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        `;
+      } else {
+        actionLabel = t('approval.feedback');
+        iconSvg = `
+          <svg class="artifact-action-svg" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+        `;
+      }
+
+      let commentHtml = '';
+      if (tItem.userComment) {
+        commentHtml = `<div class="artifact-comment-quote">${escapeHtml(tItem.userComment)}</div>`;
+      }
+
+      return `
+        <div class="artifact-action-container">
+          <div class="artifact-action-badge ${action}">
+            ${iconSvg}
+            <span class="artifact-action-label">${actionLabel}</span>
+            <span class="artifact-action-name">${escapeHtml(tItem.artifactName)}</span>
+          </div>
+          ${commentHtml}
+        </div>
+      `;
+    }
+
+    if (tItem.userPrompt) {
+      return `“${escapeHtml(tItem.userPrompt)}”`;
+    }
+
+    return `<i>${t('latest.systemInput')}</i>`;
   }
 
   // ---------------------------------------------------------------------------

@@ -446,6 +446,77 @@ body {
   word-break: break-word;
 }
 
+/* ---------------------------------------------------------------------------
+   Artifact Action & Approval Badge
+--------------------------------------------------------------------------- */
+.artifact-action-container {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-width: 100%;
+}
+
+.artifact-action-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2.5px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  width: fit-content;
+  max-width: 100%;
+  line-height: 1.25;
+}
+
+.artifact-action-badge.approved {
+  background: color-mix(in srgb, #10b981 12%, var(--card-bg));
+  border: 1px solid color-mix(in srgb, #10b981 30%, transparent);
+  color: #34d399;
+}
+
+.artifact-action-badge.declined {
+  background: color-mix(in srgb, #ef4444 12%, var(--card-bg));
+  border: 1px solid color-mix(in srgb, #ef4444 30%, transparent);
+  color: #f87171;
+}
+
+.artifact-action-badge.feedback {
+  background: color-mix(in srgb, #38bdf8 12%, var(--card-bg));
+  border: 1px solid color-mix(in srgb, #38bdf8 30%, transparent);
+  color: #38bdf8;
+}
+
+.artifact-action-svg {
+  flex-shrink: 0;
+}
+
+.artifact-action-label {
+  font-weight: 600;
+}
+
+.artifact-action-name {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-main);
+  background: color-mix(in srgb, var(--card-bg) 60%, transparent);
+  padding: 0 4px;
+  border-radius: 3px;
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  word-break: break-all;
+}
+
+.artifact-comment-quote {
+  font-size: 11px;
+  color: var(--text-muted);
+  border-left: 2px solid color-mix(in srgb, var(--card-border-color) 70%, var(--text-main) 30%);
+  padding-left: 6px;
+  margin-left: 2px;
+  line-height: 1.35;
+  font-style: italic;
+  word-break: break-word;
+}
+
 .turn-quota-pills {
   display: flex;
   gap: 6px;
