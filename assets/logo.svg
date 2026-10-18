@@ -1,11 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
   <title id="title">Quota Lens</title>
-  <desc id="desc">A quota ring and central lens, in warm white and muted gold.</desc>
+  <desc id="desc">A single Q contour with a gold diagonal terminal, expressing a quota window. Warm white and muted gold on graphite.</desc>
   <rect width="64" height="64" rx="14" fill="#191B1B"/>
-  <g fill="none" stroke-width="2.5">
-    <circle cx="32" cy="32" r="17" stroke="#A5A8A3"/>
-    <path d="M32 15a17 17 0 0 1 17 17" stroke="#B8AA8D" stroke-width="3.5" stroke-linecap="round"/>
-    <circle cx="32" cy="32" r="7" stroke="#F1EFE9"/>
-  </g>
-  <circle cx="32" cy="32" r="2" fill="#B8AA8D"/>
+  <!-- A single perimeter replaces the previous target-like concentric rings. -->
+  <circle cx="31" cy="31" r="16.5" fill="none" stroke="#F1EFE9" stroke-width="4.5"/>
+  <path d="m35.5 35.5 14 14" fill="none" stroke="#B8AA8D" stroke-width="4.5"/>
 </svg>
